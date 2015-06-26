@@ -1,0 +1,21 @@
+---
+- name: install depences
+  apt: pkg={{ item }}
+  with_items:
+    - mysql-server
+    - libmysqlclient-dev
+    - python-pip
+    - python-dev
+
+- name: install pip modules
+  pip: name={{ item }}
+  with_items:
+    - mysql-python
+
+- name: put mysqlrepldump.sh
+  copy:
+    src=usr/local/bin/mysqlrepldump.sh
+    dest=/usr/local/bin/mysqlrepldump.sh
+    mode=755
+
+
