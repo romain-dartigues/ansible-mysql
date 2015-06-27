@@ -1,0 +1,6 @@
+---
+mysql_repl_user: "replicator"
+mysql_repl_net: '%'
+replicate_databases: []
+replicate_ignore_tables: []
+replicate_ignore_tables: []
