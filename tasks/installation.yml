@@ -1,16 +1,12 @@
 ---
-- name: install depences
-  apt: pkg={{ item }}
+- name: install database
+  apt:
+    name={{ item }}
+    update_cache=yes
+    install_recommends=no
   with_items:
     - mysql-server
-    - libmysqlclient-dev
-    - python-pip
-    - python-dev
-
-- name: install pip modules
-  pip: name={{ item }}
-  with_items:
-    - mysql-python
+    - python-mysqldb
 
 - name: put mysqlrepldump.sh
   copy:
