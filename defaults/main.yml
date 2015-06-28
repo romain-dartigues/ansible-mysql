@@ -1,6 +1,15 @@
 ---
-mysql_repl_user: "replicator"
-mysql_repl_net: '%'
-replicate_databases: []
-replicate_ignore_tables: []
-replicate_ignore_tables: []
+mysql:
+  root:
+    pass: # if unset, one will be generated
+
+  replication:
+    role: # slave or master
+    master: # master location (hostname or IP address)
+    user:
+      name: "replicator"
+      host: "%"
+      pass: # if unset, one will be generated from root password
+      priv: "*.*:SELECT, PROCESS, FILE, SUPER, REPLICATION CLIENT, REPLICATION SLAVE, RELOAD"
+    databases: []
+    ignore_tables: []

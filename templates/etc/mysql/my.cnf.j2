@@ -93,11 +93,11 @@ log_error = /var/log/mysql/error.log
 server-id = {{ mysql_server_id.stdout }}
 log-bin = mysql-bin
 
-{% for replicate_database in replicate_databases -%}
+{% for replicate_database in mysql.replication.databases -%}
 binlog-do-db = {{ replicate_database }}
 {% endfor -%}
 
-{% for replicate_ignore_table in replicate_ignore_tables -%}
+{% for replicate_ignore_table in mysql.replication.ignore_tables -%}
 replicate-ignore-table = {{ replicate_ignore_table }}
 {% endfor -%}
 
