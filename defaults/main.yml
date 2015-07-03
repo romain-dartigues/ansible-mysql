@@ -1,8 +1,9 @@
 ---
-mysql_mariadb: false # install MariaDB instead of MySQL
+mysql_vendor: "MariaDB" # either MariaDB or MySQL (case sensitive)
 mysql_root_pass: # if unset, one will be generated
 
 mysql_server_id: # automatically generated (eth0 first IPv4 as long) when unset
+mysql_slow_query_log_file: # enable slow queries logging
 
 mysql_replication_role: # slave, master or unset to disable
 mysql_replication_master: # master location (hostname or IP address)

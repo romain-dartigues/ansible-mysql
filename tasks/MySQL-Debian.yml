@@ -1,0 +1,7 @@
+---
+- name: install MySQL on Debian
+  apt:
+    name={{ item }}
+    update_cache=yes
+    install_recommends=no
+  with_items: mysql_packages

@@ -1,20 +1,14 @@
 ---
-- name: install dependencies
-  apt:
-    name={{ item }}
-    update_cache=yes
-    install_recommends=no
-  with_items:
-    - python-mysqldb
-
-- name: put mysqlrepldump.sh
+- name: put mysqlrepldump
   copy:
-    src=usr/local/bin/mysqlrepldump.sh
-    dest=/usr/local/bin/mysqlrepldump.sh
+    src=usr/local/bin/mysqlrepldump
+    dest=/usr/local/bin/mysqlrepldump
     mode=755
 
-- include: install-mysql.yml
-  when: not mysql_mariadb
+- include: {{ mysql_vendor }}-{{ ansible_os_family }}.yml
 
-- include: install-mariadb.yml
-  when: mysql_mariadb
+- name: automatically start MySQL daemon
+  service:
+    name={{ mysql_daemon }}
+    state=started
+    enabled=yes

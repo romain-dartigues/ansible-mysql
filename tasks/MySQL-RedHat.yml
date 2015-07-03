@@ -1,0 +1,4 @@
+---
+- name: install MySQL on RedHat
+  yum: "name={{ item }} state=installed enablerepo={{ mysql_enablerepo }}"
+  with_items: mysql_packages

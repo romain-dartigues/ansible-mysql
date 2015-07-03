@@ -42,6 +42,15 @@
     flat=yes
   when: mysql_replication_role == "master"
 
+- name: create slow query log file
+  file:
+    state=touch
+    path={{ mysql_slow_query_log_file }}
+    owner=mysql
+    group=mysql
+    mode=0644
+  when: mysql_slow_query_log_file
+
 # Replication ################################################################
 - name: get MySQL replication password or generate one
   shell: echo -n '{{ mysql_root_pass }}' | md5sum | awk '{print $1}'
@@ -89,7 +98,7 @@
   when: system_wide_mysql_conf.changed
 
 - name: export master dump file
-  shell: mysqlrepldump.sh | gzip > /tmp/mysqldump.sql.gz
+  shell: mysqlrepldump | gzip > /tmp/mysqldump.sql.gz
   when: mysql_replication_role == "master"
 
 - name: fetch master dump file

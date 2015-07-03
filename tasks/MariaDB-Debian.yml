@@ -1,5 +1,5 @@
 ---
-# MariaDB ####################################################################
+# XXX
 # see https://downloads.mariadb.org/mariadb/repositories/
 - apt_key: keyserver=hkp://keyserver.ubuntu.com:80 id=0xcbcb082a1bb943db
 - apt_repository: repo='deb http://nyc2.mirrors.digitalocean.com/mariadb/repo/10.0/ubuntu trusty main'
@@ -11,8 +11,3 @@
     update_cache=yes
     install_recommends=no
   register: mariadb_installed
-
-- name: install mysql tools and dependencies
-  apt:
-    name=python-mysqldb
-    install_recommends=no

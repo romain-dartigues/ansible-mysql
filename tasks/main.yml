@@ -1,3 +1,6 @@
 ---
-#- include: installation.yml
-#- include: configuration.yml
+- name: Include OS-specific variables
+  include_vars: "{{ mysql_vendor }}-{{ ansible_os_family }}.yml"
+
+- include: installation.yml
+- include: configuration.yml
