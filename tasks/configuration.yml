@@ -19,6 +19,18 @@
     - 127.0.0.1
     - localhost # needs to be last for idempotency
 
+- name: push /root/.my.cnf
+  template:
+    src=root/.my.cnf.j2
+    dest=/root/.my.cnf
+    mode=0600
+- name: fetch generated /root/.my.cnf from master
+  fetch:
+    src=/root/.my.cnf
+    dest=tmp/.my.cnf
+    flat=yes
+  when: mysql_replication_role == "master"
+
 - name: remove generic MySQL users
   mysql_user:
     name: "{{ item.user }}"
@@ -29,19 +41,6 @@
   when:
     ansible_hostname
 
-- name: push /root/.my.cnf
-  template:
-    src=root/.my.cnf.j2
-    dest=/root/.my.cnf
-    mode=0600
-
-- name: fetch generated /root/.my.cnf from master
-  fetch:
-    src=/root/.my.cnf
-    dest=tmp/.my.cnf
-    flat=yes
-  when: mysql_replication_role == "master"
-
 - name: create slow query log file
   file:
     state=touch
@@ -50,6 +49,31 @@
     group=mysql
     mode=0644
   when: mysql_slow_query_log_file
+
+
+- name: get or generate server-id
+  shell:
+    ip -o -4 a s eth0 |
+    awk '{sub(/\/.*/, "", $4);split($4, a, "."); print a[1]*256^3 + a[2]*256^2 + a[3]*256 + a[4]; exit}'
+  changed_when: False
+  register: command
+  when: not mysql_server_id
+- set_fact: { mysql_server_id: "{{ command.stdout }}" }
+  when: not mysql_server_id and command.stdout is defined
+
+
+- name: put system-wide my.cnf
+  template: 
+    src: "etc/mysql/my.cnf.j2"
+    dest: "{{ mysql_config_file }}"
+  register: system_wide_mysql_conf
+
+- name: restart MySQL
+  service:
+    name=mysql
+    state=restarted
+  when: system_wide_mysql_conf.changed
+
 
 # Replication ################################################################
 - name: get MySQL replication password or generate one
@@ -69,63 +93,8 @@
     password: "{{ mysql_replication_user_pass }}"
     priv: "{{ mysql_replication_user_priv }}"
   when: >
-    mysql_replication_role == "master"
-    and
-    mysql_replication_user_name
-    and
     mysql_replication_master
-
-- name: get or generate server-id
-  shell:
-    ip -o -4 a s eth0 |
-    awk '{sub(/\/.*/, "", $4);split($4, a, "."); print a[1]*256^3 + a[2]*256^2 + a[3]*256 + a[4]; exit}'
-  changed_when: False
-  register: command
-  when: not mysql_server_id
-- set_fact: { mysql_server_id: "{{ command.stdout }}" }
-  when: not mysql_server_id and command.stdout is defined
-
-- name: put system-wide my.cnf
-  template:
-    src=etc/mysql/my.cnf.j2
-    dest=/etc/mysql/my.cnf
-  register: system_wide_mysql_conf
-
-- name: restart MySQL
-  service:
-    name=mysql
-    state=restarted
-  when: system_wide_mysql_conf.changed
-
-- name: export master dump file
-  shell: mysqlrepldump | gzip > /tmp/mysqldump.sql.gz
-  when: mysql_replication_role == "master"
-
-- name: fetch master dump file
-  fetch:
-    src=/tmp/mysqldump.sql.gz
-    dest=tmp/mysqldump.sql.gz
-    flat=yes
-  when: mysql_replication_role == "master"
-
-- name: upload master dump file on slave
-  copy:
-    src=tmp/mysqldump.sql.gz
-    dest=/tmp/mysqldump.sql.gz
-  when: mysql_replication_role == "slave"
-
-- name: check slaves status
-  mysql_replication: mode=getslave
-  ignore_errors: true
-  register: slave_status
-  when: mysql_replication_role == "slave"
-
-- name: stop replication on slave
-  mysql_replication: mode=stopslave
-  when: >
-    mysql_replication_role == "slave"
-    and
-    (slave_status | failed or slave_status.Slave_SQL_Running != "Yes")
+    and mysql_replication_role == "master" and mysql_replication_user_name
 
 
 - name: get MySQL replication password if required
@@ -141,28 +110,40 @@
     mysql_replication_role == "slave" and not mysql_replication_user_pass
     and command.stdout is defined
 
-- name: set replication
-  mysql_replication:
-    mode=changemaster
-    master_host={{ mysql_replication_master }}
-    master_user={{ mysql_replication_user_name }}
-    master_password={{ mysql_replication_user_pass }}
-  when: >
-    mysql_replication_role == "slave"
-    and
-    (slave_status | failed or slave_status.Slave_SQL_Running != "Yes")
 
-- name: import dump file
-  shell:
-    gzip -cd /tmp/mysqldump.sql.gz | mysql
+- name: check slave replication status
+  mysql_replication: mode=getslave
+  ignore_errors: true
+  register: slave
+  when: mysql_replication_role == "slave" and mysql_replication_master
+
+- name: check master replication status
+  mysql_replication: mode=getmaster
+  delegate_to: "{{ mysql_replication_master }}"
+  register: master
   when: >
-    mysql_replication_role == "slave"
-    and
-    (slave_status | failed or slave_status.Slave_SQL_Running != "Yes")
+    slave|failed
+    and mysql_replication_role == "slave"
+    and mysql_replication_master != ""
+
+- name: configure replication on the slave
+  mysql_replication:
+    mode: changemaster
+    master_host: "{{ mysql_replication_master }}"
+    master_user: "{{ mysql_replication_user_name }}"
+    master_password: "{{ mysql_replication_user_pass }}"
+    master_log_file: "{{ master.File }}"
+    master_log_pos: "{{ master.Position }}"
+  ignore_errors: True
+  when: >
+    slave|failed
+    and mysql_replication_role == "slave"
+    and mysql_replication_master != ""
+    and mysql_replication_user
 
 - name: start replication
   mysql_replication: mode=startslave
   when: >
-    mysql_replication_role == "slave"
-    and
-    (slave_status | failed or slave_status.Slave_SQL_Running != "Yes")
+    slave|failed
+    and mysql_replication_role == "slave"
+    and mysql_replication_master != ""

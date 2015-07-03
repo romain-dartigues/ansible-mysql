@@ -1,6 +1,8 @@
 ---
-- name: Include OS-specific variables
-  include_vars: "{{ mysql_vendor }}-{{ ansible_os_family }}.yml"
+- include_vars: "{{ mysql_vendor }}-{{ ansible_os_family }}.yml"
+- set_fact:
+    mysql_packages: "{{ __mysql_packages | list }}"
+  when: mysql_packages is not defined
 
 - include: installation.yml
 - include: configuration.yml

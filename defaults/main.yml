@@ -1,5 +1,5 @@
 ---
-mysql_vendor: "MariaDB" # either MariaDB or MySQL (case sensitive)
+mysql_vendor: "MySQL" # either MariaDB or MySQL (case sensitive)
 mysql_root_pass: # if unset, one will be generated
 
 mysql_server_id: # automatically generated (eth0 first IPv4 as long) when unset
@@ -11,5 +11,6 @@ mysql_replication_user_name: "replicator"
 mysql_replication_user_host: "%"
 mysql_replication_user_pass: # if unset, one will be generated from root password
 mysql_replication_user_priv: "*.*:SELECT, PROCESS, FILE, SUPER, REPLICATION CLIENT, REPLICATION SLAVE, RELOAD"
+# XXX: would it better to have "*.*:REPLICATION SLAVE"
 mysql_replication_databases: []
 mysql_replication_ignore_tables: []

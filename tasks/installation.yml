@@ -5,7 +5,17 @@
     dest=/usr/local/bin/mysqlrepldump
     mode=755
 
-- include: {{ mysql_vendor }}-{{ ansible_os_family }}.yml
+
+- include: MySQL-Debian.yml
+  when: mysql_vendor == 'MySQL' and ansible_os_family == 'Debian'
+- include: MySQL-RedHat.yml
+  when: mysql_vendor == 'MySQL' and ansible_os_family == 'RedHat'
+
+- include: MariaDB-Debian.yml
+  when: mysql_vendor == 'MariaDB' and ansible_os_family == 'Debian'
+#- include: MariaDB-RedHat.yml
+#  when: mysql_vendor == 'MariaDB' and ansible_os_family == 'RedHat'
+
 
 - name: automatically start MySQL daemon
   service:
