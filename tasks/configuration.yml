@@ -9,15 +9,29 @@
 - set_fact: { mysql_root_pass: "{{ command.stdout }}" }
   when: not mysql_root_pass and command.stdout is defined
 
-- name: set MySQL root password
+- name: get list of hosts for the root user
+  command: mysql -NBe 'SELECT Host FROM mysql.user WHERE User = "root" ORDER BY (Host="localhost") ASC;'
+  # 'localhost' needs to be last for idempotency
+  register: command
+  changed_when: false
+- name: update MySQL root password
   mysql_user:
     name: "root"
     host: "{{ item }}"
     password: "{{ mysql_root_pass }}"
-  with_items:
-    - ::1
-    - 127.0.0.1
-    - localhost # needs to be last for idempotency
+  with_items: command.stdout_lines
+
+- name: get debian-sys-maint password
+  shell: awk '/^password/{print $NF;exit}' /etc/mysql/debian.cnf
+  register: command
+  changed_when: False
+  ignore_errors: True
+- name: enforce Debian password
+  mysql_user:
+    name: 'debian-sys-maint'
+    host: 'localhost'
+    password: "{{ command.stdout }}"
+  when: command|success and command.stdout
 
 - name: push /root/.my.cnf
   template:
