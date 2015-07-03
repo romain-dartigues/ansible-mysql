@@ -44,7 +44,7 @@ skip-external-locking
 #
 # Instead of skip-networking the default is now to listen only on
 # localhost which is more compatible and is not less secure.
-{% if mysql_repl_role == "master" %}
+{% if mysql_replication_role == "master" %}
 #bind-address        = 127.0.0.1
 {% else %}
 bind-address        = 127.0.0.1
@@ -90,14 +90,14 @@ log_error = /var/log/mysql/error.log
 #       other settings you may need to change.
 #server-id		= 1
 #log_bin			= /var/log/mysql/mysql-bin.log
-server-id = {{ mysql_server_id.stdout }}
+server-id = {{ mysql_server_id }}
 log-bin = mysql-bin
 
-{% for replicate_database in mysql.replication.databases -%}
+{% for replicate_database in mysql_replication_databases -%}
 binlog-do-db = {{ replicate_database }}
 {% endfor -%}
 
-{% for replicate_ignore_table in mysql.replication.ignore_tables -%}
+{% for replicate_ignore_table in mysql_replication_ignore_tables -%}
 replicate-ignore-table = {{ replicate_ignore_table }}
 {% endfor -%}
 

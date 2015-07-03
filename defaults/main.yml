@@ -1,15 +1,14 @@
 ---
-mysql:
-  root:
-    pass: # if unset, one will be generated
+mysql_mariadb: false # install MariaDB instead of MySQL
+mysql_root_pass: # if unset, one will be generated
 
-  replication:
-    role: # slave or master
-    master: # master location (hostname or IP address)
-    user:
-      name: "replicator"
-      host: "%"
-      pass: # if unset, one will be generated from root password
-      priv: "*.*:SELECT, PROCESS, FILE, SUPER, REPLICATION CLIENT, REPLICATION SLAVE, RELOAD"
-    databases: []
-    ignore_tables: []
+mysql_server_id: # automatically generated (eth0 first IPv4 as long) when unset
+
+mysql_replication_role: # slave, master or unset to disable
+mysql_replication_master: # master location (hostname or IP address)
+mysql_replication_user_name: "replicator"
+mysql_replication_user_host: "%"
+mysql_replication_user_pass: # if unset, one will be generated from root password
+mysql_replication_user_priv: "*.*:SELECT, PROCESS, FILE, SUPER, REPLICATION CLIENT, REPLICATION SLAVE, RELOAD"
+mysql_replication_databases: []
+mysql_replication_ignore_tables: []

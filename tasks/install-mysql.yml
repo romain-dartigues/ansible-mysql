@@ -1,0 +1,10 @@
+---
+# MySQL ######################################################################
+- name: install MySQL
+  apt:
+    name={{ item }}
+    update_cache=yes
+    install_recommends=no
+  with_items:
+    - mysql-server
+
