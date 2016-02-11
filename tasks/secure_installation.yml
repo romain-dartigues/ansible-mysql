@@ -1,0 +1,42 @@
+---
+- name: drop unnecessary root accounts
+  mysql_user:
+   name: 'root'
+   host: '{{ item }}'
+   state: 'absent'
+ with_flattened:
+   - [ '127.0.0.1', '::1' ]
+   - [ '{{ ansible_hostname if (ansible_hostname != "localhost") else [] }}' ]
+ when: item|default() and item
+
+- name: update database admin password
+  mysql_user:
+    name: 'root'
+    host: 'localhost'
+    password: '{{ mysql_root_password }}'
+
+- name: create /root/.my.cnf with root credentials
+  template:
+    src: 'root/my.cnf.j2'
+    dest: '/root/.my.cnf'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+
+- name: delete anonymous database user
+  mysql_user:
+    name: ''
+    host: '{{ item }}'
+    state: 'absent'
+  with_items: [ '{{ ansible_hostname }}', 'localhost' ]
+
+- name: remove test database on first install
+  mysql_db:
+    db: test
+    state: absent
+  when: (
+    (mysql_register_version|default() and not mysql_register_version.stdout)
+    and
+    (mysql_register_install_status|default() and mysql_register_install_status.changed)
+  )
+

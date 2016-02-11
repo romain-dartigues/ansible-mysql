@@ -6,15 +6,7 @@
     mode=755
 
 
-- include: MySQL-Debian.yml
-  when: mysql_vendor == 'MySQL' and ansible_os_family == 'Debian'
-- include: MySQL-RedHat.yml
-  when: mysql_vendor == 'MySQL' and ansible_os_family == 'RedHat'
-
-- include: MariaDB-Debian.yml
-  when: mysql_vendor == 'MariaDB' and ansible_os_family == 'Debian'
-#- include: MariaDB-RedHat.yml
-#  when: mysql_vendor == 'MariaDB' and ansible_os_family == 'RedHat'
+- include: "{{ mysql_vendor }}-{{ ansible_os_family }}.yml"
 
 
 - name: automatically start MySQL daemon

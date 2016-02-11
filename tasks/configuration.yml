@@ -1,163 +1,44 @@
 ---
-- name: get MySQL root password or generate one if none specified
-  shell:
-    (awk -F'"' '/^password/{print $2;exit;}' /root/.my.cnf) ||
-    (</dev/urandom LC_ALL=C sed -r 'N;s/[^[:print:]]|[\s"]//g' | head -c 32)
-  changed_when: False
-  register: command
-  when: not mysql_root_pass
-- set_fact: { mysql_root_pass: "{{ command.stdout }}" }
-  when: not mysql_root_pass and command.stdout is defined
-
-- name: get list of hosts for the root user
-  command: mysql -NBe 'SELECT Host FROM mysql.user WHERE User = "root" ORDER BY (Host="localhost") ASC;'
-  # 'localhost' needs to be last for idempotency
-  register: command
-  changed_when: false
-- name: update MySQL root password
-  mysql_user:
-    name: "root"
-    host: "{{ item }}"
-    password: "{{ mysql_root_pass }}"
-  with_items: command.stdout_lines
-
-- name: get debian-sys-maint password
-  shell: awk '/^password/{print $NF;exit}' /etc/mysql/debian.cnf
-  register: command
-  changed_when: False
-  ignore_errors: True
-- name: enforce Debian password
-  mysql_user:
-    name: 'debian-sys-maint'
-    host: 'localhost'
-    password: "{{ command.stdout }}"
-  when: command|success and command.stdout
-
-- name: push /root/.my.cnf
+- name: configure database server
   template:
-    src=root/.my.cnf.j2
-    dest=/root/.my.cnf
-    mode=0600
-- name: fetch generated /root/.my.cnf from master
-  fetch:
-    src=/root/.my.cnf
-    dest=tmp/.my.cnf
-    flat=yes
-  when: mysql_replication_role == "master"
+    src: 'etc/mysql/conf.d/mysqld.cnf.j2'
+    dest: '/etc/mysql/conf.d/mysqld.cnf'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify: [ 'reload MySQL' ]
 
-- name: remove generic MySQL users
-  mysql_user:
-    name: "{{ item.user }}"
-    host: "{{ item.host }}"
-    state: "absent"
-  with_items:
-    - { user: root, host: "{{ ansible_hostname }}" }
-  when:
-    ansible_hostname
+- name: configure automysqlbackup
+  template:
+    src: 'etc/default/automysqlbackup.j2'
+    dest: '/etc/default/automysqlbackup'
+    owner: root
+    group: root
+    mode: 0640
+  when: mysql_backup|default()
 
-- name: create slow query log file
+- name: create automysqlbackup directory
   file:
-    state=touch
-    path={{ mysql_slow_query_log_file }}
-    owner=mysql
-    group=mysql
-    mode=0644
-  when: mysql_slow_query_log_file
+    path: "{{ mysql_backup_options.BACKUPDIR }}"
+    state: directory
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+  when: mysql_backup|default() and mysql_backup_options.BACKUPDIR|default()
 
+- name: create mysqldump section in debian.cnf
+  lineinfile:
+    regexp: '^\[mysqldump\]'
+    dest: '/etc/mysql/debian.cnf'
+    line: '[mysqldump]'
+    state: 'present'
+  when: ansible_os_family == "Debian"
 
-- name: get or generate server-id
-  shell:
-    ip -o -4 a s eth0 |
-    awk '{sub(/\/.*/, "", $4);split($4, a, "."); print a[1]*256^3 + a[2]*256^2 + a[3]*256 + a[4]; exit}'
-  changed_when: False
-  register: command
-  when: not mysql_server_id
-- set_fact: { mysql_server_id: "{{ command.stdout }}" }
-  when: not mysql_server_id and command.stdout is defined
-
-
-- name: put system-wide my.cnf
-  template: 
-    src: "etc/mysql/my.cnf.j2"
-    dest: "{{ mysql_config_file }}"
-  register: system_wide_mysql_conf
-
-- name: restart MySQL
-  service:
-    name=mysql
-    state=restarted
-  when: system_wide_mysql_conf.changed
-
-
-# Replication ################################################################
-- name: get MySQL replication password or generate one
-  shell: echo -n '{{ mysql_root_pass }}' | md5sum | awk '{print $1}'
-  when: mysql_replication_role == "master" and not mysql_replication_user_pass
-  register: command
-  changed_when: False
-- set_fact: { mysql_replication_user_pass: "{{ command.stdout }}" }
-  when: >
-    mysql_replication_role == "master" and not mysql_replication_user_pass
-    and command.stdout is defined
-
-- name: ensure replication user exists on master
-  mysql_user:
-    name: "{{ mysql_replication_user_name }}"
-    host: "{{ mysql_replication_user_host }}"
-    password: "{{ mysql_replication_user_pass }}"
-    priv: "{{ mysql_replication_user_priv }}"
-  when: >
-    mysql_replication_master
-    and mysql_replication_role == "master" and mysql_replication_user_name
-
-
-- name: get MySQL replication password if required
-  local_action:
-    shell awk -F'"' '/^password/{printf "%s", $2;exit}' .my.cnf |
-    md5sum | awk '{print $1}'
-  sudo: False
-  changed_when: False
-  register: command
-  when: mysql_replication_role == "slave" and not mysql_replication_user_pass
-- set_fact: { mysql_replication_user_pass: "{{ command.stdout }}" }
-  when: >
-    mysql_replication_role == "slave" and not mysql_replication_user_pass
-    and command.stdout is defined
-
-
-- name: check slave replication status
-  mysql_replication: mode=getslave
-  ignore_errors: true
-  register: slave
-  when: mysql_replication_role == "slave" and mysql_replication_master
-
-- name: check master replication status
-  mysql_replication: mode=getmaster
-  delegate_to: "{{ mysql_replication_master }}"
-  register: master
-  when: >
-    slave|failed
-    and mysql_replication_role == "slave"
-    and mysql_replication_master != ""
-
-- name: configure replication on the slave
-  mysql_replication:
-    mode: changemaster
-    master_host: "{{ mysql_replication_master }}"
-    master_user: "{{ mysql_replication_user_name }}"
-    master_password: "{{ mysql_replication_user_pass }}"
-    master_log_file: "{{ master.File }}"
-    master_log_pos: "{{ master.Position }}"
-  ignore_errors: True
-  when: >
-    slave|failed
-    and mysql_replication_role == "slave"
-    and mysql_replication_master != ""
-    and mysql_replication_user
-
-- name: start replication
-  mysql_replication: mode=startslave
-  when: >
-    slave|failed
-    and mysql_replication_role == "slave"
-    and mysql_replication_master != ""
+- name: enable events table backup in mysqldump
+  lineinfile:
+    insertafter: '[mysqldump]'
+    regexp: '^events\s'
+    dest: '/etc/mysql/debian.cnf'
+    line: 'events = true'
+    state: 'present'
+  when: ansible_os_family == "Debian"

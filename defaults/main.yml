@@ -1,16 +1,106 @@
 ---
-mysql_vendor: "MySQL" # either MariaDB or MySQL (case sensitive)
-mysql_root_pass: # if unset, one will be generated
+# Default variables
+# =================
 
-mysql_server_id: # automatically generated (eth0 first IPv4 as long) when unset
-mysql_slow_query_log_file: # enable slow queries logging
+# .. contents:: Sections
+#    :local:
+#
+# .. envvar:: mysql_vendor
+#
+# Defines which database engine to use (case sensitive):
+#
+#  - ``MySQL``: (default) use MySQL
+#  - ``MariaDB``: use MariaDB from repository
+#  - ``MariaDB-upstream``: use MariaDB from upstream repository
+mysql_vendor: "MySQL"
 
-mysql_replication_role: # slave, master or unset to disable
-mysql_replication_master: # master location (hostname or IP address)
+mysql_packages_map:
+  'MySQL': [ 'mysql-server' ]
+  'MariaDB': [ 'mariadb-server' ]
+  'MariaDB-upstream': [ 'mariadb-server' ]
+
+# .. envvar:: mysql_root_pass
+#
+# Administrator password, if unset one will be generated.
+mysql_root_pass:
+
+# .. envvar:: mysql_slow_query_log_file
+#
+# Enable slow queries logging.
+mysql_slow_query_log_file:
+
+# .. envvar:: mysql_replication_role
+#
+# slave, master or unset to disable
+mysql_replication_role:
+
+# .. envvar:: mysql_replication_master
+#
+# master location (hostname or IP address)
+mysql_replication_master:
+# .. envvar:: mysql_replication_user_name
 mysql_replication_user_name: "replicator"
+# .. envvar:: mysql_replication_user_host
 mysql_replication_user_host: "%"
+# .. envvar:: mysql_replication_user_pass
 mysql_replication_user_pass: # if unset, one will be generated from root password
-mysql_replication_user_priv: "*.*:SELECT, PROCESS, FILE, SUPER, REPLICATION CLIENT, REPLICATION SLAVE, RELOAD"
-# XXX: would it better to have "*.*:REPLICATION SLAVE"
+# .. envvar:: mysql_replication_user_priv
+#
+# Used to be::
+#
+#   *.*:SELECT, PROCESS, FILE, SUPER, REPLICATION CLIENT, REPLICATION SLAVE, RELOAD
+mysql_replication_user_priv: "*.*:REPLICATION SLAVE"
+
+# .. envvar:: mysql_replication_databases
 mysql_replication_databases: []
-mysql_replication_ignore_tables: []
+
+# .. envvar:: mysql_options
+#
+# Options to set to the configuration file
+mysql_options_mysqld:
+  # Change to ``0.0.0.0`` for IPv4 listening and ``::`` for IPv4 and IPv6.
+  bind-address: localhost
+  port: 3306
+  max-connections: 100
+  character-set-server: utf8
+  collation-server: utf8_general_ci
+  init-connect: 'SET NAMES utf8;'
+  # Automatically generated (eth0 first IPv4 as long) when unset.
+  server-id:
+
+mysql_options_client:
+  default-character-set: utf8
+
+
+# Auto MySQL Backup
+# -----------------
+#
+# http://automysqlbackup.sf.net/
+#
+# XXX: http://askubuntu.com/questions/134670/how-do-i-stop-automysqlbackup-throwing-lock-tables-error
+# XXX: http://garthwaite.org/automysqlbackup.html
+#
+# .. envvar:: mysql_backup
+#
+# Enable `Auto MySQL Backup <http://automysqlbackup.sf.net/>`_.
+mysql_backup: False
+
+# .. envvar:: mysql_backup_options
+#
+# Options to be set in the configuration.
+mysql_backup_options:
+  BACKUPDIR: /var/lib/automysqlbackup
+  DBHOST: localhost
+  MAILCONTENT: quiet
+  MAXATTSIZE: 4000
+  MAILADDR: root
+  DBNAMES: all
+  MDBNAMES: "mysql $DBNAMES"
+  DBEXCLUDE: "mysql information_schema performance_schema"
+  CREATE_DATABASE: yes
+  SEPDIR: yes
+  DOWEEKLY: 6
+  COMP: gzip
+  COMMCOMP: no
+  LATEST: no
+  ROUTINES: yes

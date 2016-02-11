@@ -1,0 +1,34 @@
+# {{ ansible_managed }}
+{# ../../defaults/main.yml #}
+
+[mysqld]
+{#
+Replication options
+###################
+
+.. Note::
+   The options: ``binlog-*-db`` and ``replicate-*-db`` are considered harmful;
+   it is suggested to use the ``replicate-wild-*`` options instead.
+   https://www.percona.com/blog/2009/05/14/why-mysqls-binlog-do-db-option-is-dangerous/
+#}
+{# XXX: on master #}
+{% for replicate_database in mysql_replication_databases -%}
+binlog-do-db = {{ replicate_database }}
+{%- endfor %}
+
+{# XXX: on slave #}
+{% for replicate_database in mysql_replication_databases -%}
+replicate-wild-do-table= {{ replicate_database }}.%
+{%- endfor %}
+
+{#
+Miscellaneous options
+#####################
+#}
+{% for key, value in mysql_options_mysqld.iteritems() -%}
+{% if value -%}
+{{ "%-23s = %s" | format(key, value) }}
+{% else -%}
+{{ key }}
+{%- endif %}
+{%- endfor %}
