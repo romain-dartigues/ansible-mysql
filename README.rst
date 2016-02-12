@@ -2,6 +2,9 @@
 README
 ######
 
+.. Important::
+   Do not use! In development.
+
 Credits
 #######
 
@@ -31,12 +34,6 @@ Passwords generation and Vault
 
 * https://github.com/ansible/ansible/pull/14079
 * https://github.com/ansible/ansible/pull/8110
-
-mysql-replication-ansible
--------------------------
-
-Use `@akagisho <https://github.com/akagisho>`_ work and make it usable as a
-submodule role in a ansible deployment.
 
 MySQL
 =====
