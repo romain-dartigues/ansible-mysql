@@ -7,8 +7,8 @@
     host: "{{ mysql_replication_user_host }}"
     password: "{{ mysql_replication_user_pass }}"
     priv: "{{ mysql_replication_user_priv }}"
-  when: >
-    mysql_replication_master
+  when:
+        mysql_replication_master is defined
     and mysql_replication_role == "master" and mysql_replication_user_name
     and mysql_replication_user_pass
 
@@ -16,17 +16,19 @@
 - name: check slave replication status
   mysql_replication: mode=getslave
   ignore_errors: true
-  register: slave
-  when: mysql_replication_role == "slave" and mysql_replication_master
+  register: mysql_register_slave
+  when: mysql_replication_role == "slave" and mysql_replication_master is defined
 
 - name: check master replication status
   mysql_replication: mode=getmaster
-  delegate_to: "{{ mysql_replication_master }}"
+  delegate_to: "{{ item }}"
+  with_flattened:
+    - '{{ mysql_replication_master if mysql_replication_master is defined else [] }}'
   register: master
   when:
         mysql_replication_role == "slave"
     and mysql_replication_master != ""
-    and slave|failed
+    and mysql_register_slave|failed
 
 - name: configure replication on the slave
   mysql_replication:
@@ -41,11 +43,11 @@
         mysql_replication_role == "slave"
     and mysql_replication_master != ""
     and mysql_replication_user
-    and slave|failed
+    and mysql_register_slave|failed
 
 - name: start replication
   mysql_replication: mode=startslave
   when:
         mysql_replication_role == "slave"
     and mysql_replication_master != ""
-    and slave|failed
+    and mysql_register_slave|failed
