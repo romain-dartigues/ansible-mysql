@@ -15,7 +15,7 @@
     name: '{{ item }}'
     install_recommends: False
   with_flattened:
-    - mysql_packages_map[mysql_vendor]
+    - mysql_packages_map[mysql_flavor]
     - [ '{{ "automysqlbackup" if mysql_backup|default() else [] }}' ]
   register: mysql_register_install_status
 
@@ -39,7 +39,7 @@
     owner: 'root'
     group: 'root'
     mode: '0644'
-  when: mysql_register_version|default() and not mysql_register_version.stdout
+  when: mysql_register_version is defined and not mysql_register_version.stdout
 
 - name: database configuration
   include: 'configuration.yml'
@@ -52,12 +52,13 @@
     state: 'restarted'
   when:
     (mysql_register_install_status|default() and mysql_register_install_status.changed)
-    and (mysql_register_version|default() and not mysql_register_version.stdout)
+    and (mysql_register_version is defined and not mysql_register_version.stdout)
 
 - name: secure installation
   include: 'secure_installation.yml'
   tags:
     - mysql/secure_installation
+  when:
 
 - name: create a fact directory on the target machine
   file:

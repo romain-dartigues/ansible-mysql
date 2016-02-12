@@ -4,14 +4,14 @@
     state: present
     id: "0xcbcb082a1bb943db"
     keyserver: 'hkp://keyserver.ubuntu.com:80'
-  when: mysql_vendor == 'MariaDB-upstream'
+  when: mysql_flavor == 'MariaDB-upstream'
 
 - name: add MariaDB APT repository
   apt_repository:
     repo: '{{ mariadb_server_upstream_repository }}' # XXX
     state: 'present'
     update_cache: True
-  when: mysql_vendor == 'MariaDB-upstream'
+  when: mysql_flavor == 'MariaDB-upstream'
 
 # XXX
 # see https://downloads.mariadb.org/mariadb/repositories/

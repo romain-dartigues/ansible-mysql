@@ -5,9 +5,9 @@
     (</dev/urandom LC_ALL=C sed -r 'N;s/[^[:print:]]|[\s"]//g' | head -c 32)
   changed_when: False
   register: command
-  when: not mysql_root_pass
-- set_fact: { mysql_root_pass: "{{ command.stdout }}" }
-  when: not mysql_root_pass and command.stdout is defined
+  when: not mysql_root_password
+- set_fact: { mysql_root_password: "{{ command.stdout }}" }
+  when: not mysql_root_password and command.stdout is defined
 
 - name: get list of hosts for the root user
   command: mysql -NBe 'SELECT Host FROM mysql.user WHERE User = "root" ORDER BY (Host="localhost") ASC;'
@@ -18,7 +18,7 @@
   mysql_user:
     name: "root"
     host: "{{ item }}"
-    password: "{{ mysql_root_pass }}"
+    password: "{{ mysql_root_password }}"
   with_items: command.stdout_lines
 
 - name: get debian-sys-maint password
@@ -91,7 +91,7 @@
 
 # Replication ################################################################
 - name: get MySQL replication password or generate one
-  shell: echo -n '{{ mysql_root_pass }}' | md5sum | awk '{print $1}'
+  shell: echo -n '{{ mysql_root_password }}' | md5sum | awk '{print $1}'
   when: mysql_replication_role == "master" and not mysql_replication_user_pass
   register: command
   changed_when: False

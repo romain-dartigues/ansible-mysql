@@ -35,6 +35,6 @@
     db: test
     state: absent
   when:
-    (mysql_register_install_status|default() and mysql_register_install_status.changed)
-    and (mysql_register_version|default() and not mysql_register_version.stdout)
+        (mysql_register_install_status|default() and mysql_register_install_status.changed)
+    and (mysql_register_version|default() and mysql_register_version.stdout is not defined)
 

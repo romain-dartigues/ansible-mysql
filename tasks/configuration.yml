@@ -11,15 +11,16 @@
 - set_fact: mysql_server_id={{ command.stdout }}
   when: not mysql_server_id and command.stdout is defined
 
+
 - name: get MySQL root password or generate one if none specified
   shell:
     (LC_ALL=C sed -rn 's/^[[:blank:]]*pwd[[:blank:]]*=[[:blank:]]*([\x27"]?)(.*?)(\1)[[:blank:]]*$/\2/p' /root/.my.cnf) ||
     (LC_ALL=C sed -r 'N;s/[^[:print:]]|[\x21-\x27`]//g' /dev/urandom | head -c 32)
   changed_when: False
   register: command
-  when: not mysql_root_pass
-- set_fact: mysql_root_pass={{ command.stdout }}
-  when: not mysql_root_pass and command.stdout is defined
+  when: not mysql_root_password
+- set_fact: mysql_root_password={{ command.stdout }}
+  when: not mysql_root_password and command.stdout is defined
 
 
 - name: configure database server
@@ -31,6 +32,7 @@
     mode: '0644'
   notify: [ 'reload MySQL' ]
 
+
 - name: create slow query log file
   file:
     state=touch
@@ -41,91 +43,14 @@
   when: mysql_slow_query_log_file
 
 
-# Replication
-# ###########
-- name: ensure replication user exists on master
-  mysql_user:
-    name: "{{ mysql_replication_user_name }}"
-    host: "{{ mysql_replication_user_host }}"
-    password: "{{ mysql_replication_user_pass }}"
-    priv: "{{ mysql_replication_user_priv }}"
-  when: >
-    mysql_replication_master
-    and mysql_replication_role == "master" and mysql_replication_user_name
-    and mysql_replication_user_pass
+- name: database replication configuration
+  include: 'configure_replication.yml'
+  tags:
+    - mysql/replication
 
 
-- name: check slave replication status
-  mysql_replication: mode=getslave
-  ignore_errors: true
-  register: slave
-  when: mysql_replication_role == "slave" and mysql_replication_master
-
-- name: check master replication status
-  mysql_replication: mode=getmaster
-  delegate_to: "{{ mysql_replication_master }}"
-  register: master
-  when:
-        mysql_replication_role == "slave"
-    and mysql_replication_master != ""
-    and slave|failed
-
-- name: configure replication on the slave
-  mysql_replication:
-    mode: changemaster
-    master_host: "{{ mysql_replication_master }}"
-    master_user: "{{ mysql_replication_user_name }}"
-    master_password: "{{ mysql_replication_user_pass }}"
-    master_log_file: "{{ master.File }}"
-    master_log_pos: "{{ master.Position }}"
-  ignore_errors: True
-  when:
-        mysql_replication_role == "slave"
-    and mysql_replication_master != ""
-    and mysql_replication_user
-    and slave|failed
-
-- name: start replication
-  mysql_replication: mode=startslave
-  when:
-        mysql_replication_role == "slave"
-    and mysql_replication_master != ""
-    and slave|failed
-
-
-# Auto MySQL Backup
-# #################
-- name: configure automysqlbackup
-  template:
-    src: 'etc/default/automysqlbackup.j2'
-    dest: '/etc/default/automysqlbackup'
-    owner: root
-    group: root
-    mode: 0640
-  when: mysql_backup|default()
-
-- name: create automysqlbackup directory
-  file:
-    path: "{{ mysql_backup_options.BACKUPDIR }}"
-    state: directory
-    owner: 'root'
-    group: 'root'
-    mode: '0755'
-  when: mysql_backup|default() and mysql_backup_options.BACKUPDIR|default()
-
-- name: create mysqldump section in debian.cnf
-  lineinfile:
-    regexp: '^\[mysqldump\]'
-    dest: '/etc/mysql/debian.cnf'
-    line: '[mysqldump]'
-    state: 'present'
-  when: ansible_os_family == "Debian"
-
-- name: enable events table backup in mysqldump
-  lineinfile:
-    insertafter: '[mysqldump]'
-    regexp: '^events\s'
-    dest: '/etc/mysql/debian.cnf'
-    line: 'events = true'
-    state: 'present'
-  when: ansible_os_family == "Debian"
+- name: auto MySQL backup configuration
+  include: 'configure_automysqlbackup.yml'
+  tags:
+    - mysql/backup
+  when: mysql_backup and mysql_register_version is defined

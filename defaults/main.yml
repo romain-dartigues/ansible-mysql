@@ -2,17 +2,23 @@
 # Default variables
 # =================
 
+# .. envvar:: mariadb_server_delegate_to
+#
+# Hostname of the server to which Ansible roles will delegate tasks.
+# It should point to "this server", using a FQDN hostname known to Ansible.
+mysql_delegate_to: '{{ ansible_fqdn }}'
+
 # .. contents:: Sections
 #    :local:
 #
-# .. envvar:: mysql_vendor
+# .. envvar:: mysql_flavor
 #
 # Defines which database engine to use (case sensitive):
 #
 #  - ``MySQL``: (default) use MySQL
 #  - ``MariaDB``: use MariaDB from repository
 #  - ``MariaDB-upstream``: use MariaDB from upstream repository
-mysql_vendor: "MySQL"
+mysql_flavor: "MySQL"
 
 mysql_packages_map:
   'MySQL': [ 'mysql-server' ]
@@ -24,10 +30,10 @@ mysql_packages_map:
 # Automatically generated (eth0 first IPv4 as long) when unset.
 mysql_server_id:
 
-# .. envvar:: mysql_root_pass
+# .. envvar:: mysql_root_password
 #
 # Administrator password, if unset one will be generated.
-mysql_root_pass:
+mysql_root_password:
 
 # .. envvar:: mysql_slow_query_log_file
 #

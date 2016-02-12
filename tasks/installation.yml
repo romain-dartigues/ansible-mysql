@@ -6,7 +6,7 @@
     mode=755
 
 
-- include: "{{ mysql_vendor }}-{{ ansible_os_family }}.yml"
+- include: "{{ mysql_flavor }}-{{ ansible_os_family }}.yml"
 
 
 - name: automatically start MySQL daemon
