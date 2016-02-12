@@ -1,0 +1,37 @@
+---
+# Auto MySQL Backup
+# #################
+- name: configure automysqlbackup
+  template:
+    src: 'etc/default/automysqlbackup.j2'
+    dest: '/etc/default/automysqlbackup'
+    owner: root
+    group: root
+    mode: 0640
+  when: mysql_backup|default()
+
+- name: create automysqlbackup directory
+  file:
+    path: "{{ mysql_backup_options.BACKUPDIR }}"
+    state: directory
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+  when: mysql_backup|default() and mysql_backup_options.BACKUPDIR|default()
+
+- name: create mysqldump section in debian.cnf
+  lineinfile:
+    regexp: '^\[mysqldump\]'
+    dest: '/etc/mysql/debian.cnf'
+    line: '[mysqldump]'
+    state: 'present'
+  when: ansible_os_family == "Debian"
+
+- name: enable events table backup in mysqldump
+  lineinfile:
+    insertafter: '[mysqldump]'
+    regexp: '^events\s'
+    dest: '/etc/mysql/debian.cnf'
+    line: 'events = true'
+    state: 'present'
+  when: ansible_os_family == "Debian"
