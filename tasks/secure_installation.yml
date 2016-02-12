@@ -4,10 +4,10 @@
    name: 'root'
    host: '{{ item }}'
    state: 'absent'
- with_flattened:
-   - [ '127.0.0.1', '::1' ]
-   - [ '{{ ansible_hostname if (ansible_hostname != "localhost") else [] }}' ]
- when: item|default() and item
+  with_flattened:
+    - [ '127.0.0.1', '::1' ]
+    - [ '{{ ansible_hostname if (ansible_hostname != "localhost") else [] }}' ]
+  when: item|default() and item
 
 - name: update database admin password
   mysql_user:
@@ -34,9 +34,7 @@
   mysql_db:
     db: test
     state: absent
-  when: (
-    (mysql_register_version|default() and not mysql_register_version.stdout)
-    and
+  when:
     (mysql_register_install_status|default() and mysql_register_install_status.changed)
-  )
+    and (mysql_register_version|default() and not mysql_register_version.stdout)
 

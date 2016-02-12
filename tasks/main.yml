@@ -50,11 +50,9 @@
   service:
     name: 'mysql'
     state: 'restarted'
-  when: (
-    (mysql_register_version|default() and not mysql_register_version.stdout)
-    and
+  when:
     (mysql_register_install_status|default() and mysql_register_install_status.changed)
-  )
+    and (mysql_register_version|default() and not mysql_register_version.stdout)
 
 - name: secure installation
   include: 'secure_installation.yml'

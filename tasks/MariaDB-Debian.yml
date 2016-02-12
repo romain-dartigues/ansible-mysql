@@ -8,7 +8,7 @@
 
 - name: add MariaDB APT repository
   apt_repository:
-    repo: {{ mariadb_server_upstream_repository }} # XXX
+    repo: '{{ mariadb_server_upstream_repository }}' # XXX
     state: 'present'
     update_cache: True
   when: mysql_vendor == 'MariaDB-upstream'

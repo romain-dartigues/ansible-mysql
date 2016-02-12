@@ -19,6 +19,11 @@ mysql_packages_map:
   'MariaDB': [ 'mariadb-server' ]
   'MariaDB-upstream': [ 'mariadb-server' ]
 
+# .. envvar:: mysql_server_id
+#
+# Automatically generated (eth0 first IPv4 as long) when unset.
+mysql_server_id:
+
 # .. envvar:: mysql_root_pass
 #
 # Administrator password, if unset one will be generated.
@@ -29,21 +34,54 @@ mysql_root_pass:
 # Enable slow queries logging.
 mysql_slow_query_log_file:
 
+# .. envvar:: mysql_options
+#
+# Options to set to the configuration file.
+#
+# .. Warning::
+#    Some options are defined outside this map (ie.: ``mysql_server_id``, ...).
+mysql_options_mysqld:
+  # Change to ``0.0.0.0`` for IPv4 listening and ``::`` for IPv4 and IPv6.
+  bind-address: localhost
+  port: 3306
+  max-connections: 100
+  character-set-server: utf8
+  collation-server: utf8_general_ci
+  init-connect: 'SET NAMES utf8;'
+
+mysql_options_client:
+  default-character-set: utf8
+
+
+# Replication
+# ===========
+#
+# .. Note::
+#    All ``mysql_replication_*`` are required in order to setup replication.
+#
 # .. envvar:: mysql_replication_role
 #
-# slave, master or unset to disable
+# Could be one of: ``slave``, ``master`` or unset to disable.
 mysql_replication_role:
 
 # .. envvar:: mysql_replication_master
 #
-# master location (hostname or IP address)
+# Master location (hostname or IP address).
 mysql_replication_master:
+
 # .. envvar:: mysql_replication_user_name
+#
+# Username used for the replication.
 mysql_replication_user_name: "replicator"
+
 # .. envvar:: mysql_replication_user_host
+#
+# Host of the replication user (client) used to create the access on the master.
 mysql_replication_user_host: "%"
+
 # .. envvar:: mysql_replication_user_pass
-mysql_replication_user_pass: # if unset, one will be generated from root password
+mysql_replication_user_pass:
+
 # .. envvar:: mysql_replication_user_priv
 #
 # Used to be::
@@ -53,23 +91,6 @@ mysql_replication_user_priv: "*.*:REPLICATION SLAVE"
 
 # .. envvar:: mysql_replication_databases
 mysql_replication_databases: []
-
-# .. envvar:: mysql_options
-#
-# Options to set to the configuration file
-mysql_options_mysqld:
-  # Change to ``0.0.0.0`` for IPv4 listening and ``::`` for IPv4 and IPv6.
-  bind-address: localhost
-  port: 3306
-  max-connections: 100
-  character-set-server: utf8
-  collation-server: utf8_general_ci
-  init-connect: 'SET NAMES utf8;'
-  # Automatically generated (eth0 first IPv4 as long) when unset.
-  server-id:
-
-mysql_options_client:
-  default-character-set: utf8
 
 
 # Auto MySQL Backup
