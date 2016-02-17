@@ -104,9 +104,6 @@ mysql_replication_databases: []
 #
 # http://automysqlbackup.sf.net/
 #
-# XXX: http://askubuntu.com/questions/134670/how-do-i-stop-automysqlbackup-throwing-lock-tables-error
-# XXX: http://garthwaite.org/automysqlbackup.html
-#
 # .. envvar:: mysql_backup
 #
 # Enable `Auto MySQL Backup <http://automysqlbackup.sf.net/>`_.

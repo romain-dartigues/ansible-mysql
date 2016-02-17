@@ -1,5 +1,6 @@
 ---
-# XXX: only Debian for now, in the future will probably be something like:
+# TODO: make it RedHat compatible
+# Only Debian for now, in the future will probably be something like:
 # - include: "install_for_{{ ansible_os_family }}.yml"
 - name: check if database server is installed
   environment:
@@ -9,7 +10,7 @@
   changed_when: False
   failed_when: False
 
-#XXX: only MySQL for now
+# TODO: support MariaDB
 - name: install MySQL on Debian
   apt:
     name: '{{ item }}'

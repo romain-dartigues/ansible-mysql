@@ -1,4 +1,5 @@
 ---
+# XXX: currently unused
 # from https://github.com/debops/ansible-mariadb_server/blob/master/defaults/main.yml
 mariadb_server_upstream_version: '10.1'
 

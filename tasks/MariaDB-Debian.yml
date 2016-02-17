@@ -1,4 +1,5 @@
 ---
+# TODO: currently unused
 - name: add MariaDB APT GPG key
   apt_key:
     state: present
@@ -8,12 +9,11 @@
 
 - name: add MariaDB APT repository
   apt_repository:
-    repo: '{{ mariadb_server_upstream_repository }}' # XXX
+    repo: '{{ mariadb_server_upstream_repository }}' # XXX?
     state: 'present'
     update_cache: True
   when: mysql_flavor == 'MariaDB-upstream'
 
-# XXX
 # see https://downloads.mariadb.org/mariadb/repositories/
 - apt_key: keyserver=hkp://keyserver.ubuntu.com:80 id=0xcbcb082a1bb943db
 - apt_repository: repo='deb http://nyc2.mirrors.digitalocean.com/mariadb/repo/10.0/ubuntu trusty main'

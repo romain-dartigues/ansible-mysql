@@ -45,3 +45,8 @@ Replication
 
   * https://support.rackspace.com/how-to/mysql-replication-masterslave/
 
+Auto MySQL Backup
+-----------------
+
+* http://askubuntu.com/questions/134670/how-do-i-stop-automysqlbackup-throwing-lock-tables-error
+* http://garthwaite.org/automysqlbackup.html

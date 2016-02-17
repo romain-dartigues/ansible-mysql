@@ -1,4 +1,5 @@
 ---
+# XXX: currently unused
 mysql_daemon: mysql
 mysql_config_file: /etc/mysql/my.cnf
 __mysql_packages:
