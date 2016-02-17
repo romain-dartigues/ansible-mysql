@@ -1,4 +1,5 @@
 ---
+# XXX: unused
 - name: get MySQL root password or generate one if none specified
   shell:
     (awk -F'"' '/^password/{print $2;exit;}' /root/.my.cnf) ||
