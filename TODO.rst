@@ -2,6 +2,35 @@
 TODO
 ####
 
+TODO
+####
+
+Ansible
+=======
+
+Passwords generation and Vault
+------------------------------
+
+* https://github.com/ansible/ansible/pull/14079
+* https://github.com/ansible/ansible/pull/8110
+
+MySQL
+=====
+
+Replication
+-----------
+
+* http://www.lexiconn.com/blog/2014/04/how-to-set-up-selective-master-slave-replication-in-mysql/
+
+  * https://support.rackspace.com/how-to/mysql-replication-masterslave/
+
+Auto MySQL Backup
+-----------------
+
+* http://askubuntu.com/questions/134670/how-do-i-stop-automysqlbackup-throwing-lock-tables-error
+* http://garthwaite.org/automysqlbackup.html
+
+
 General recommendations to follow
 #################################
 
@@ -12,7 +41,7 @@ Filesystem hierarchy (writable by MySQL)::
 
    /var/run/mysql/data
    /var/run/mysql/backup
-   /var/run/mysql/binlo
+   /var/run/mysql/binlog
 
 Admin (root) account must be secured.
 
@@ -34,8 +63,6 @@ Configuration
 
    [mysqld_safe]
    log-error=/lun/mysql1/logs/mysqld.log
-
-   [mysqld_safe]
    slow_query_log_file = /lun/mysql1/logs/mysql-slow.log
    long_query_time=2
    slow-query-log=1

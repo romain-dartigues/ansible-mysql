@@ -5,6 +5,23 @@ README
 .. Important::
    Do not use! In development.
 
+Requirements
+############
+
+In your :file:`ansible.cfg`:
+
+.. code-block:: ini
+
+   [defaults]
+   hash_behaviour=merge
+
+Conventions
+###########
+
+* everything is prefixed with ``mysql_``
+* every registerd variable is prefixed by ``mysql_register_``
+* every tag is prefixed with ``mysql/``
+
 Credits
 #######
 
@@ -15,38 +32,3 @@ Inspiration from:
 
 * https://github.com/debops/ansible-mysql
 * https://github.com/debops/ansible-mariadb_server
-
-Conventions
-###########
-
-* everything is prefixed with ``mysql_``
-* every registerd variable is prefixed by ``mysql_register_``
-* every tag is prefixed with ``mysql/``
-
-TODO
-####
-
-Ansible
-=======
-
-Passwords generation and Vault
-------------------------------
-
-* https://github.com/ansible/ansible/pull/14079
-* https://github.com/ansible/ansible/pull/8110
-
-MySQL
-=====
-
-Replication
------------
-
-* http://www.lexiconn.com/blog/2014/04/how-to-set-up-selective-master-slave-replication-in-mysql/
-
-  * https://support.rackspace.com/how-to/mysql-replication-masterslave/
-
-Auto MySQL Backup
------------------
-
-* http://askubuntu.com/questions/134670/how-do-i-stop-automysqlbackup-throwing-lock-tables-error
-* http://garthwaite.org/automysqlbackup.html
