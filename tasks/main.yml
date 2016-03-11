@@ -33,15 +33,6 @@
     dest: '{{ "/etc/mysql/my.cnf" if ansible_os_family == "Debian" else "/etc/my.cnf" }}'
     line: "!includedir /etc/mysql/conf.d/"
 
-- name: configure database client on first install
-  template:
-    src: 'etc/mysql/conf.d/client.cnf.j2'
-    dest: '/etc/mysql/conf.d/client.cnf'
-    owner: 'root'
-    group: 'root'
-    mode: '0644'
-  when: mysql_register_version is defined and not mysql_register_version.stdout
-
 - name: database configuration
   include: 'configuration.yml'
   tags:

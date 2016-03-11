@@ -25,8 +25,8 @@
 
 - name: configure database server
   template:
-    src: 'etc/mysql/conf.d/mysqld.cnf.j2'
-    dest: '/etc/mysql/conf.d/mysqld.cnf'
+    src: 'etc/mysql/conf.d/global.cnf.j2'
+    dest: '/etc/mysql/conf.d/global.cnf'
     owner: 'root'
     group: 'root'
     mode: '0644'

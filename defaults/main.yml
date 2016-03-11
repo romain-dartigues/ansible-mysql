@@ -46,18 +46,50 @@ mysql_slow_query_log_file:
 #
 # .. Warning::
 #    Some options are defined outside this map (ie.: ``mysql_server_id``, ...).
-mysql_options_mysqld:
-  # Change to ``0.0.0.0`` for IPv4 listening and ``::`` for IPv4 and IPv6.
-  bind-address: localhost
-  port: 3306
-  max-connections: 100
-  character-set-server: utf8
-  collation-server: utf8_general_ci
-  init-connect: 'SET NAMES utf8;'
+#
+# It is recommended to have separate filesystems (or at least directory quotas),
+# for ``datadir``, ``log-bin``, ``tmpdir`` and the ``log-error`` parent directory.
+#
+# Taking in consideration FHS_ 3.0, we suggest:
+#
+# .. _FHS: http://refspecs.linuxfoundation.org/
+#
+# /var/lib/mysql:
+#    for databases
+#
+# /var/cache/mysql:
+#    for backups and dumps
+#
+# /var/log/mysql:
+#    for log files
+#
+# /var/spool/mysql:
+#    for binlogs
+#
+mysql_options:
+  mysqld:
+    # Change to ``0.0.0.0`` for IPv4 listening and ``::`` for IPv4 and IPv6.
+    bind-address: localhost
+    port: 3306
+    max-connections: 100
+    character-set-server: utf8
+    collation-server: utf8_general_ci
+    init-connect: 'SET NAMES utf8;'
+    datadir: /var/lib/mysql
+    log-bin: /var/spool/mysql
+    tmpdir: /var/tmp/mysql
+    socket: /var/run/mysqld/mysqld.sock
+    old_passwords: 0
+    innodb_file_per_table: 1
 
-mysql_options_client:
-  default-character-set: utf8
+  mysqld_safe:
+    log-error: /var/log/mysql/error.log
+    slow_query_log_file: /var/log/mysql/slow.log
+    long_query_time: 2
+    slow-query-log: 1
 
+  client:
+    default-character-set: utf8
 
 # Replication
 # ===========
@@ -65,10 +97,17 @@ mysql_options_client:
 # .. Note::
 #    All ``mysql_replication_*`` are required in order to setup replication.
 #
+# .. Note::
+#    The options: ``binlog-*-db`` and ``replicate-*-db`` are considered harmful;
+#    it is suggested to use the ``replicate-wild-*`` options instead.
+#    https://www.percona.com/blog/2009/05/14/why-mysqls-binlog-do-db-option-is-dangerous/
+#
 # .. envvar:: mysql_replication_role
 #
 # Could be one of: ``slave``, ``master`` or unset to disable.
 mysql_replication_role:
+# on master:
+binlog-do-db = {{ replicate_database }}
 
 # .. envvar:: mysql_replication_master
 #
@@ -95,8 +134,28 @@ mysql_replication_user_pass:
 #   *.*:SELECT, PROCESS, FILE, SUPER, REPLICATION CLIENT, REPLICATION SLAVE, RELOAD
 mysql_replication_user_priv: "*.*:REPLICATION SLAVE"
 
-# .. envvar:: mysql_replication_databases
-mysql_replication_databases: []
+# .. envvar:: mysql_replicate_databases
+mysql_replicate_databases: []
+
+# .. envvar:: mysql_master_options
+#
+# Additional options, only on the master.
+mysql_master_options:
+  mysqld:
+    expire_logs_days: 3
+    max_binlog_size: 20M
+    innodb_flush_log_at_trx_commit: 1
+    sync_binlog: 1
+    binlog-do-db: '{{ mysql_replicate_databases }}'
+
+# .. envvar:: mysql_slave_options
+#
+# Additional options, only on the slave.
+mysql_slave_options:
+  mysqld:
+    skip-slave-start: 1
+    read_only: 1
+    replicate-wild-do-table: '{{ mysql_replicate_databases }}'
 
 
 # Auto MySQL Backup
