@@ -3,7 +3,7 @@
 # ######################
 - name: get or generate server-id
   shell:
-    ip -o -4 a s eth0 |
+    ip -o -4 a s eth0 up |
     awk '{sub(/\/.*/, "", $4);split($4, a, "."); print a[1]*256^3 + a[2]*256^2 + a[3]*256 + a[4]; exit}'
   changed_when: False
   register: command
@@ -16,6 +16,7 @@
   shell:
     (LC_ALL=C sed -rn 's/^[[:blank:]]*pwd[[:blank:]]*=[[:blank:]]*([\x27"]?)(.*?)(\1)[[:blank:]]*$/\2/p' /root/.my.cnf) ||
     (LC_ALL=C sed -r 'N;s/[^[:print:]]|[\x21-\x27`]//g' /dev/urandom | head -c 32)
+  # could be: openssl rand -base64 24
   changed_when: False
   register: command
   when: not mysql_root_password
