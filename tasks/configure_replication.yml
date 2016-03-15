@@ -1,6 +1,14 @@
 ---
 # Replication
 # ###########
+- set_fact:
+    mysql_replication_user_pass: '{{ lookup("password", "credentials/mysql/" + mysql_replication_master + "/" + mysql_replication_user_name + " length=24") }}'
+  when:
+        mysql_replication_role|default()
+    and mysql_replication_master|default()
+    and mysql_replication_user_name|default()
+    and not mysql_replication_user_pass|default()
+
 - name: ensure replication user exists on master
   mysql_user:
     name: "{{ mysql_replication_user_name }}"

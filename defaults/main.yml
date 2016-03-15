@@ -21,9 +21,9 @@ mysql_delegate_to: '{{ ansible_fqdn }}'
 mysql_flavor: "MySQL"
 
 mysql_packages_map:
-  'MySQL': [ 'mysql-server' ]
-  'MariaDB': [ 'mariadb-server' ]
-  'MariaDB-upstream': [ 'mariadb-server' ]
+  'MySQL': [ 'mysql-server', 'python-mysqldb' ]
+  'MariaDB': [ 'mariadb-server', 'python-mysqldb' ]
+  'MariaDB-upstream': [ 'mariadb-server', 'python-mysqldb' ]
 
 # .. envvar:: mysql_server_id
 #
@@ -77,7 +77,7 @@ mysql_options:
     collation-server: utf8_general_ci
     init-connect: 'SET NAMES utf8;'
     datadir: /var/lib/mysql
-    log-bin: /var/spool/mysql
+    log-bin: /var/spool/mysql/mysql-bin
     tmpdir: /var/tmp/mysql
     socket: /var/run/mysqld/mysqld.sock
     old_passwords: 0

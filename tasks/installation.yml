@@ -5,7 +5,6 @@
     dest=/usr/local/bin/mysqlrepldump
     mode=755
 
-
 - include: "{{ mysql_flavor }}-{{ ansible_os_family }}.yml"
 
 

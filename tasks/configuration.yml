@@ -1,7 +1,21 @@
 ---
 # Database configuration
 # ######################
+- name: ensure /etc/mysql/conf.d existance
+  file:
+    path: /etc/mysql/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: ensure /etc/mysql/conf.d inclusion
+  lineinfile:
+    dest: '{{ "/etc/mysql/my.cnf" if ansible_os_family == "Debian" else "/etc/my.cnf" }}'
+    line: "!includedir /etc/mysql/conf.d/"
+
 - name: get or generate server-id
+  # XXX: won't work with !@# systemd?
   shell:
     ip -o -4 a s eth0 up |
     awk '{sub(/\/.*/, "", $4);split($4, a, "."); print a[1]*256^3 + a[2]*256^2 + a[3]*256 + a[4]; exit}'
@@ -13,10 +27,10 @@
 
 
 - name: get MySQL root password or generate one if none specified
+  # would be better with: ``openssl rand -base64 24`` or password lookup?
   shell:
     (LC_ALL=C sed -rn 's/^[[:blank:]]*pwd[[:blank:]]*=[[:blank:]]*([\x27"]?)(.*?)(\1)[[:blank:]]*$/\2/p' /root/.my.cnf) ||
-    (LC_ALL=C sed -r 'N;s/[^[:print:]]|[\x21-\x27`]//g' /dev/urandom | head -c 32)
-  # could be: openssl rand -base64 24
+    (</dev/urandom tr -cd '\40\41\43-\46\50-\137\141-\176' | head -c 32)
   changed_when: False
   register: command
   when: not mysql_root_password
@@ -34,6 +48,23 @@
   notify: [ 'reload MySQL' ]
 
 
+- name: create directories
+  file:
+    dest: '{{ item }}'
+    state: 'directory'
+    recurse: true
+    owner: 'mysql'
+    group: 'mysql'
+    mode: '0755'
+  with_items:
+    - "{{ mysql_options.mysqld.datadir }}"
+    - "{{ mysql_options.mysqld['log-bin'] | dirname }}"
+    - "{{ mysql_options.mysqld.tmpdir }}"
+    - "{{ mysql_options.mysqld.socket }}"
+    - "{{ mysql_options.mysqld_safe['log-error'] | dirname }}"
+    - "{{ mysql_options.mysqld_safe.slow_query_log_file | dirname }}"
+
+
 - name: create slow query log file
   file:
     state=touch
@@ -41,13 +72,14 @@
     owner=mysql
     group=mysql
     mode=0644
-  when: mysql_slow_query_log_file
+  when: mysql_slow_query_log_file|default()
 
 
 - name: database replication configuration
   include: 'configure_replication.yml'
   tags:
     - mysql/replication
+  when: mysql_replication_role|default()
 
 
 - name: auto MySQL backup configuration

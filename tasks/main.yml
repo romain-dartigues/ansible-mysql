@@ -10,28 +10,16 @@
   changed_when: False
   failed_when: False
 
-# TODO: support MariaDB
-- name: install MySQL on Debian
+- name: 'install {{ mysql_flavor }} on Debian'
   apt:
     name: '{{ item }}'
     install_recommends: False
   with_flattened:
     - mysql_packages_map[mysql_flavor]
     - [ '{{ "automysqlbackup" if mysql_backup|default() else [] }}' ]
+  when:
+    not mysql_register_version|default()
   register: mysql_register_install_status
-
-- name: ensure /etc/mysql/conf.d existance
-  file:
-    path: /etc/mysql/conf.d
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
-
-- name: ensure /etc/mysql/conf.d inclusion
-  lineinfile:
-    dest: '{{ "/etc/mysql/my.cnf" if ansible_os_family == "Debian" else "/etc/my.cnf" }}'
-    line: "!includedir /etc/mysql/conf.d/"
 
 - name: database configuration
   include: 'configuration.yml'
@@ -43,7 +31,7 @@
     name: 'mysql'
     state: 'restarted'
   when:
-    (mysql_register_install_status|default() and mysql_register_install_status.changed)
+        (mysql_register_install_status|default() and mysql_register_install_status.changed)
     and (mysql_register_version is defined and not mysql_register_version.stdout)
 
 - name: secure installation
