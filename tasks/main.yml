@@ -14,7 +14,8 @@
   tags:
     - mysql_secure_installation
   when:
-    mysql_register_install_status.changed is defined
+        mysql_register_install_status.changed is defined
+    and mysql_register_install_status.changed
 
 - name: create a fact directory on the target machine
   file:

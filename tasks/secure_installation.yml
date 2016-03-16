@@ -12,7 +12,7 @@
 
 - name: show unnecessary accounts
   debug: var=command.stdout_lines
-  when: command.stdout is defined
+  when: command.stdout is defined and command.stdout|default()
 
 - name: drop unnecessary accounts
   mysql_user:
