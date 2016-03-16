@@ -31,14 +31,14 @@
     name: 'mysql'
     state: 'restarted'
   when:
-        (mysql_register_install_status|default() and mysql_register_install_status.changed)
-    and (mysql_register_version is defined and not mysql_register_version.stdout)
+        mysql_register_install_status.changed is defined
+    and mysql_register_version|default()
+    and not mysql_register_version.stdout|default()
 
 - name: secure installation
   include: 'secure_installation.yml'
   tags:
     - mysql/secure_installation
-  when:
 
 - name: create a fact directory on the target machine
   file:
@@ -59,5 +59,6 @@
 
 - name: reload facts if they have changed
   action: setup
-  when: mysql_register_facts_locally|default() and mysql_register_facts_locally.changed
+  when:
+    mysql_register_facts_locally.changed is defined
 

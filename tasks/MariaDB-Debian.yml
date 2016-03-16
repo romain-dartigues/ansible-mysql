@@ -1,5 +1,5 @@
 ---
-# TODO: currently unused
+# XXX: currently unused
 - name: add MariaDB APT GPG key
   apt_key:
     state: present

@@ -16,7 +16,7 @@
     password: "{{ mysql_replication_user_pass }}"
     priv: "{{ mysql_replication_user_priv }}"
   when:
-        mysql_replication_master is defined
+        mysql_replication_master|default()
     and mysql_replication_role == "master" and mysql_replication_user_name
     and mysql_replication_user_pass
 
@@ -25,7 +25,9 @@
   mysql_replication: mode=getslave
   ignore_errors: true
   register: mysql_register_slave
-  when: mysql_replication_role == "slave" and mysql_replication_master is defined
+  when:
+        mysql_replication_role == "slave"
+    and mysql_replication_master|default()
 
 - name: check master replication status
   mysql_replication: mode=getmaster
@@ -35,7 +37,7 @@
   register: master
   when:
         mysql_replication_role == "slave"
-    and mysql_replication_master != ""
+    and mysql_replication_master|default()
     and mysql_register_slave|failed
 
 - name: configure replication on the slave
@@ -49,7 +51,7 @@
   ignore_errors: True
   when:
         mysql_replication_role == "slave"
-    and mysql_replication_master != ""
+    and mysql_replication_master|default()
     and mysql_replication_user
     and mysql_register_slave|failed
 
@@ -57,5 +59,5 @@
   mysql_replication: mode=startslave
   when:
         mysql_replication_role == "slave"
-    and mysql_replication_master != ""
+    and mysql_replication_master|default()
     and mysql_register_slave|failed

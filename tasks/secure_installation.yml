@@ -1,13 +1,17 @@
 ---
-- name: drop unnecessary root accounts
+- name: find unnecessary accounts
+  command:
+    mysql -NBe 'SELECT User, Host FROM mysql.user WHERE (User="root" AND Host!="localhost") OR User="";'
+  changed_when: False
+  register: command
+
+- name: drop unnecessary accounts
   mysql_user:
-   name: 'root'
-   host: '{{ item }}'
+   name: "{{ item.split('\t').0 }}"
+   host: "{{ item.split('\t').1 }}"
    state: 'absent'
-  with_flattened:
-    - [ '127.0.0.1', '::1' ]
-    - [ '{{ ansible_hostname if (ansible_hostname != "localhost") else [] }}' ]
-  when: item|default() and item
+  with_items: command.stdout_lines
+  when: command.stdout is defined
 
 - name: update database admin password
   mysql_user:
@@ -23,18 +27,11 @@
     group: 'root'
     mode: '0600'
 
-- name: delete anonymous database user
-  mysql_user:
-    name: ''
-    host: '{{ item }}'
-    state: 'absent'
-  with_items: [ '{{ ansible_hostname }}', 'localhost' ]
-
 - name: remove test database on first install
   mysql_db:
     db: test
     state: absent
   when:
-        (mysql_register_install_status|default() and mysql_register_install_status.changed)
-    and (mysql_register_version|default() and mysql_register_version.stdout is not defined)
+        mysql_register_install_status.changed is defined
+    and mysql_register_version.stdout is not defined
 

@@ -1,5 +1,5 @@
 ---
-# XXX: unused
+# XXX: currently unused
 - name: get MySQL root password or generate one if none specified
   shell:
     (awk -F'"' '/^password/{print $2;exit;}' /root/.my.cnf) ||
@@ -74,11 +74,12 @@
   register: command
   when: not mysql_server_id
 - set_fact: { mysql_server_id: "{{ command.stdout }}" }
-  when: not mysql_server_id and command.stdout is defined
+  when:
+    command.stdout is defined
 
 
 - name: put system-wide my.cnf
-  template: 
+  template:
     src: "etc/mysql/my.cnf.j2"
     dest: "{{ mysql_config_file }}"
   register: system_wide_mysql_conf
@@ -93,13 +94,14 @@
 # Replication ################################################################
 - name: get MySQL replication password or generate one
   shell: echo -n '{{ mysql_root_password }}' | md5sum | awk '{print $1}'
-  when: mysql_replication_role == "master" and not mysql_replication_user_pass
+  when:
+        mysql_replication_role == "master"
+    and not mysql_replication_user_pass|default()
   register: command
   changed_when: False
 - set_fact: { mysql_replication_user_pass: "{{ command.stdout }}" }
-  when: >
-    mysql_replication_role == "master" and not mysql_replication_user_pass
-    and command.stdout is defined
+  when:
+    command.stdout is defined
 
 - name: ensure replication user exists on master
   mysql_user:
@@ -107,9 +109,10 @@
     host: "{{ mysql_replication_user_host }}"
     password: "{{ mysql_replication_user_pass }}"
     priv: "{{ mysql_replication_user_priv }}"
-  when: >
-    mysql_replication_master
-    and mysql_replication_role == "master" and mysql_replication_user_name
+  when:
+        mysql_replication_master|default()
+    and mysql_replication_role == "master"
+    and mysql_replication_user_name
 
 
 - name: get MySQL replication password if required
@@ -119,27 +122,30 @@
   sudo: False
   changed_when: False
   register: command
-  when: mysql_replication_role == "slave" and not mysql_replication_user_pass
+  when:
+        mysql_replication_role == "slave"
+    and not mysql_replication_user_pass
 - set_fact: { mysql_replication_user_pass: "{{ command.stdout }}" }
-  when: >
-    mysql_replication_role == "slave" and not mysql_replication_user_pass
-    and command.stdout is defined
+  when:
+    command.stdout is defined
 
 
 - name: check slave replication status
   mysql_replication: mode=getslave
   ignore_errors: true
   register: slave
-  when: mysql_replication_role == "slave" and mysql_replication_master
+  when:
+        mysql_replication_role == "slave"
+    and mysql_replication_master
 
 - name: check master replication status
   mysql_replication: mode=getmaster
   delegate_to: "{{ mysql_replication_master }}"
   register: master
-  when: >
-    slave|failed
+  when:
+        slave|failed
     and mysql_replication_role == "slave"
-    and mysql_replication_master != ""
+    and mysql_replication_master|default()
 
 - name: configure replication on the slave
   mysql_replication:
@@ -150,15 +156,15 @@
     master_log_file: "{{ master.File }}"
     master_log_pos: "{{ master.Position }}"
   ignore_errors: True
-  when: >
-    slave|failed
+  when:
+        slave|failed
     and mysql_replication_role == "slave"
-    and mysql_replication_master != ""
+    and mysql_replication_master|default()
     and mysql_replication_user
 
 - name: start replication
   mysql_replication: mode=startslave
-  when: >
-    slave|failed
+  when:
+        slave|failed
     and mysql_replication_role == "slave"
-    and mysql_replication_master != ""
+    and mysql_replication_master|default()

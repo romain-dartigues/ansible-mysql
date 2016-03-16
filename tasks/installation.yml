@@ -1,4 +1,5 @@
 ---
+# XXX: currently unused
 - name: put mysqlrepldump
   copy:
     src=usr/local/bin/mysqlrepldump

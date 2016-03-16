@@ -15,27 +15,28 @@
     line: "!includedir /etc/mysql/conf.d/"
 
 - name: get or generate server-id
-  # XXX: won't work with !@# systemd?
   shell:
-    ip -o -4 a s eth0 up |
-    awk '{sub(/\/.*/, "", $4);split($4, a, "."); print a[1]*256^3 + a[2]*256^2 + a[3]*256 + a[4]; exit}'
+    ip -o -4 a s up |
+    awk '$2 != "lo" {sub(/\/.*/, "", $4);split($4, a, "."); print a[1]*256^3 + a[2]*256^2 + a[3]*256 + a[4]; exit}'
   changed_when: False
   register: command
   when: not mysql_server_id
 - set_fact: mysql_server_id={{ command.stdout }}
-  when: not mysql_server_id and command.stdout is defined
+  when: command.stdout is defined
 
 
 - name: get MySQL root password or generate one if none specified
-  # would be better with: ``openssl rand -base64 24`` or password lookup?
+  become: true
+  become_user: root
   shell:
-    (LC_ALL=C sed -rn 's/^[[:blank:]]*pwd[[:blank:]]*=[[:blank:]]*([\x27"]?)(.*?)(\1)[[:blank:]]*$/\2/p' /root/.my.cnf) ||
+    # XXX: lookup password or vault would be safer
+    (LC_ALL=C sed -rn 's/^[[:blank:]]*password[[:blank:]]*=[[:blank:]]*([\x27"]?)(.*?)(\1)[[:blank:]]*$/\2/p' /root/.my.cnf) ||
     (</dev/urandom tr -cd '\40\41\43-\46\50-\137\141-\176' | head -c 32)
   changed_when: False
   register: command
-  when: not mysql_root_password
+  when: not mysql_root_password|default()
 - set_fact: mysql_root_password={{ command.stdout }}
-  when: not mysql_root_password and command.stdout is defined
+  when: command.stdout is defined
 
 
 - name: configure database server
@@ -60,7 +61,7 @@
     - "{{ mysql_options.mysqld.datadir }}"
     - "{{ mysql_options.mysqld['log-bin'] | dirname }}"
     - "{{ mysql_options.mysqld.tmpdir }}"
-    - "{{ mysql_options.mysqld.socket }}"
+    - "{{ mysql_options.mysqld.socket | dirname }}"
     - "{{ mysql_options.mysqld_safe['log-error'] | dirname }}"
     - "{{ mysql_options.mysqld_safe.slow_query_log_file | dirname }}"
 

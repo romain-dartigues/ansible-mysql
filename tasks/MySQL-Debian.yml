@@ -1,4 +1,5 @@
 ---
+# XXX: currently unused
 - name: install MySQL on Debian
   apt:
     name={{ item }}
