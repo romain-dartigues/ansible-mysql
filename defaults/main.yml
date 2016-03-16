@@ -45,6 +45,10 @@ mysql_slow_query_log_file:
 # .. Warning::
 #    Some options are defined outside this map (ie.: ``mysql_server_id``, ...).
 #
+# .. Note::
+#    If you setup a master-slave database, do not forget to setup
+#    ``mysql_options.mysqld.bind-address`` if you want it to work.
+#
 # It is recommended to have separate filesystems (or at least directory quotas),
 # for ``datadir``, ``log-bin``, ``tmpdir`` and the ``log-error`` parent directory.
 #
@@ -108,7 +112,7 @@ mysql_replication_role:
 
 # .. envvar:: mysql_replication_master
 #
-# Master location (hostname or IP address).
+# Master location (hostname or IP address or ansible name).
 mysql_replication_master:
 
 # .. envvar:: mysql_replication_user_name

@@ -1,13 +1,26 @@
 ---
 # Replication
 # ###########
+
+- name: set replication master from Ansible name if required
+  set_fact: mysql_register_replication_master={{ hostvars[mysql_replication_master].ansible_fqdn if hostvars[mysql_replication_master] is defined else mysql_replication_master|default() }}
+
 - set_fact:
-    mysql_replication_user_pass: '{{ lookup("password", "credentials/mysql/" + mysql_replication_master + "/" + mysql_replication_user_name + " length=24") }}'
+    mysql_replication_user_pass: '{{ lookup("password", "credentials/mysql/" + mysql_replication_master + "/" + mysql_replication_user_name) }}'
   when:
         mysql_replication_role|default()
     and mysql_replication_master|default()
     and mysql_replication_user_name|default()
     and not mysql_replication_user_pass|default()
+
+- name: test requirements for replication configuration
+  assert:
+    that:
+      - mysql_replication_role|default()
+      - mysql_replication_master|default()
+      - mysql_register_replication_master
+      - mysql_replication_user_name|default()
+      - mysql_replication_user_pass|default()
 
 - name: ensure replication user exists on master
   mysql_user:
@@ -16,9 +29,9 @@
     password: "{{ mysql_replication_user_pass }}"
     priv: "{{ mysql_replication_user_priv }}"
   when:
-        mysql_replication_master|default()
-    and mysql_replication_role == "master" and mysql_replication_user_name
-    and mysql_replication_user_pass
+        mysql_replication_role == "master"
+    and mysql_replication_user_name|default()
+    and mysql_replication_user_pass|default()
 
 
 - name: check slave replication status
@@ -27,23 +40,21 @@
   register: mysql_register_slave
   when:
         mysql_replication_role == "slave"
-    and mysql_replication_master|default()
+    and mysql_register_replication_master
 
 - name: check master replication status
   mysql_replication: mode=getmaster
-  delegate_to: "{{ item }}"
-  with_flattened:
-    - '{{ mysql_replication_master if mysql_replication_master is defined else [] }}'
+  delegate_to: "{{ mysql_register_replication_master }}"
   register: master
   when:
         mysql_replication_role == "slave"
-    and mysql_replication_master|default()
+    and mysql_register_replication_master
     and mysql_register_slave|failed
 
 - name: configure replication on the slave
   mysql_replication:
     mode: changemaster
-    master_host: "{{ mysql_replication_master }}"
+    master_host: "{{ mysql_register_replication_master }}"
     master_user: "{{ mysql_replication_user_name }}"
     master_password: "{{ mysql_replication_user_pass }}"
     master_log_file: "{{ master.File }}"
@@ -51,7 +62,7 @@
   ignore_errors: True
   when:
         mysql_replication_role == "slave"
-    and mysql_replication_master|default()
+    and mysql_register_replication_master
     and mysql_replication_user
     and mysql_register_slave|failed
 
@@ -59,5 +70,5 @@
   mysql_replication: mode=startslave
   when:
         mysql_replication_role == "slave"
-    and mysql_replication_master|default()
+    and mysql_register_replication_master
     and mysql_register_slave|failed
