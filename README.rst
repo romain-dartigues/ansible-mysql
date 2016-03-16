@@ -19,7 +19,7 @@ Conventions
 ###########
 
 * everything is prefixed with ``mysql_``
-* every registerd variable is prefixed by ``mysql_register_``
+* every registered variable is prefixed by ``mysql_register_``
 
 Credits
 #######
