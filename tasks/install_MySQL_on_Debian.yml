@@ -1,0 +1,25 @@
+---
+- name: packages to be installed
+  set_fact:
+    mysql_register_packages: >
+      {{
+        [ mysql_flavor.partition('-').0.lower() + '-server' ]
+        + mysql_packages
+        + ( [ 'automysqlbackup' ] if mysql_backup|default() else [] )
+      }}
+
+- name: check if database server is installed
+  environment:
+    LC_MESSAGES: 'C'
+  shell: dpkg-query -W -f='${Version}\n' '{{ mysql_register_packages|join("' '") }}'
+  register: command
+  changed_when: False
+
+- name: 'install {{ mysql_flavor }} on {{ ansible_os_family }}'
+  apt:
+    name: '{{ item }}'
+    install_recommends: False
+  with_items: mysql_register_packages
+  when:
+    command|failed
+  register: mysql_register_install_status

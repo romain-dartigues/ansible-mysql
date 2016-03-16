@@ -20,7 +20,6 @@ Conventions
 
 * everything is prefixed with ``mysql_``
 * every registerd variable is prefixed by ``mysql_register_``
-* every tag is prefixed with ``mysql/``
 
 Credits
 #######

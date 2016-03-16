@@ -1,9 +1,18 @@
 ---
+- name: restart database server on first install
+  service:
+    name: 'mysql'
+    state: 'restarted'
+
 - name: find unnecessary accounts
   command:
     mysql -NBe 'SELECT User, Host FROM mysql.user WHERE (User="root" AND Host!="localhost") OR User="";'
   changed_when: False
   register: command
+
+- name: show unnecessary accounts
+  debug: var=command.stdout_lines
+  when: command.stdout is defined
 
 - name: drop unnecessary accounts
   mysql_user:
@@ -13,25 +22,9 @@
   with_items: command.stdout_lines
   when: command.stdout is defined
 
-- name: update database admin password
-  mysql_user:
-    name: 'root'
-    host: 'localhost'
-    password: '{{ mysql_root_password }}'
-
-- name: create /root/.my.cnf with root credentials
-  template:
-    src: 'root/my.cnf.j2'
-    dest: '/root/.my.cnf'
-    owner: 'root'
-    group: 'root'
-    mode: '0600'
-
 - name: remove test database on first install
   mysql_db:
     db: test
     state: absent
-  when:
-        mysql_register_install_status.changed is defined
-    and mysql_register_version.stdout is not defined
+  when: mysql_register_install_status.changed is defined
 

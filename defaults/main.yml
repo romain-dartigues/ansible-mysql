@@ -20,10 +20,8 @@ mysql_delegate_to: '{{ ansible_fqdn }}'
 #  - ``MariaDB-upstream``: use MariaDB from upstream repository
 mysql_flavor: "MySQL"
 
-mysql_packages_map:
-  'MySQL': [ 'mysql-server', 'python-mysqldb' ]
-  'MariaDB': [ 'mariadb-server', 'python-mysqldb' ]
-  'MariaDB-upstream': [ 'mariadb-server', 'python-mysqldb' ]
+mysql_packages:
+  - python-mysqldb
 
 # .. envvar:: mysql_server_id
 #

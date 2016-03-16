@@ -1,44 +1,20 @@
 ---
 # TODO: make it RedHat compatible
-# Only Debian for now, in the future will probably be something like:
-# - include: "install_for_{{ ansible_os_family }}.yml"
-- name: check if database server is installed
-  environment:
-    LC_MESSAGES: 'C'
-  shell: dpkg-query -W -f='${Version}\n' 'mariadb-server' 'mysql-server' 'percona-server-server' | grep -v '^$'
-  register: mysql_register_version
-  changed_when: False
-  failed_when: False
-
-- name: 'install {{ mysql_flavor }} on Debian'
-  apt:
-    name: '{{ item }}'
-    install_recommends: False
-  with_flattened:
-    - mysql_packages_map[mysql_flavor]
-    - [ '{{ "automysqlbackup" if mysql_backup|default() else [] }}' ]
-  when:
-    not mysql_register_version|default()
-  register: mysql_register_install_status
+- include: install_MySQL_on_Debian.yml
+  tags:
+    - mysql_installation
 
 - name: database configuration
   include: 'configuration.yml'
   tags:
-    - mysql/configuration
-
-- name: restart database server on first install
-  service:
-    name: 'mysql'
-    state: 'restarted'
-  when:
-        mysql_register_install_status.changed is defined
-    and mysql_register_version|default()
-    and not mysql_register_version.stdout|default()
+    - mysql_configuration
 
 - name: secure installation
   include: 'secure_installation.yml'
   tags:
-    - mysql/secure_installation
+    - mysql_secure_installation
+  when:
+    mysql_register_install_status.changed is defined
 
 - name: create a fact directory on the target machine
   file:

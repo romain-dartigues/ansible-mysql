@@ -46,7 +46,8 @@
     owner: 'root'
     group: 'root'
     mode: '0644'
-  notify: [ 'reload MySQL' ]
+  register:
+    mysql_register_configuration_changed
 
 
 - name: create directories
@@ -79,12 +80,32 @@
 - name: database replication configuration
   include: 'configure_replication.yml'
   tags:
-    - mysql/replication
+    - mysql_replication
   when: mysql_replication_role|default()
 
 
 - name: auto MySQL backup configuration
   include: 'configure_automysqlbackup.yml'
   tags:
-    - mysql/backup
-  when: mysql_backup and mysql_register_version is defined
+    - mysql_backup
+  when: mysql_backup
+
+
+- name: update database admin password
+  mysql_user:
+    name: 'root'
+    host: 'localhost'
+    password: '{{ mysql_root_password }}'
+
+- name: reload MySQL
+  service:
+    name: mysql
+    state: reloaded
+
+- name: create /root/.my.cnf with root credentials
+  template:
+    src: 'root/my.cnf.j2'
+    dest: '/root/.my.cnf'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
