@@ -5,7 +5,7 @@
     - mysql_installation
 
 - name: database configuration
-  include: 'configuration.yml'
+  include: 'configure.yml'
   tags:
     - mysql_configuration
 
