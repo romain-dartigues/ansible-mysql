@@ -3,16 +3,15 @@
   service:
     name: 'mysql'
     state: 'restarted'
+  when:
+        mysql_register_install_status is defined
+    and mysql_register_install_status|changed
 
 - name: find unnecessary accounts
   command:
     mysql -NBe 'SELECT User, Host FROM mysql.user WHERE (User="root" AND Host!="localhost") OR User="";'
   changed_when: False
   register: command
-
-- name: show unnecessary accounts
-  debug: var=command.stdout_lines
-  when: command.stdout|default()
 
 - name: drop unnecessary accounts
   mysql_user:
@@ -28,4 +27,5 @@
     db: test
     state: absent
   when:
-    mysql_register_install_status|changed
+        mysql_register_install_status is defined
+    and mysql_register_install_status|changed

@@ -2,6 +2,7 @@
 # TODO: remove when https://github.com/ansible/ansible/pull/14028 will be merged
 - command: /bin/true
   register: command
+  changed_when: False
 - set_fact: ansible_check_mode={{ command|skipped }}
 
 # TODO: support MariaDB
@@ -19,8 +20,6 @@
   include: 'secure_installation.yml'
   tags:
     - mysql_secure_installation
-  when:
-    mysql_register_install_status|changed
 
 - name: create a fact directory on the target machine
   file:

@@ -1,7 +1,6 @@
 ---
 # Replication
 # ###########
-
 - name: set replication master from Ansible name if required
   set_fact: mysql_register_replication_master={{ hostvars[mysql_replication_master].ansible_fqdn if hostvars[mysql_replication_master] is defined else mysql_replication_master|default() }}
 

@@ -1,18 +1,14 @@
 ---
 # Database configuration
 # ######################
-- name: ensure /etc/mysql/conf.d existance
-  file:
-    path: /etc/mysql/conf.d
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
-
-- name: ensure /etc/mysql/conf.d inclusion
-  lineinfile:
-    dest: '{{ "/etc/mysql/my.cnf" if ansible_os_family == "Debian" else "/etc/my.cnf" }}'
-    line: "!includedir /etc/mysql/conf.d/"
+#
+# Compute missing values
+# ======================
+- name: get or set MySQL root password when unset
+  set_fact:
+    mysql_root_password: '{{ lookup("password", "credentials/mysql/" + ansible_fqdn + "/root") }}'
+  when:
+    not mysql_root_password|default()
 
 - name: get or generate server-id
   shell:
@@ -25,21 +21,20 @@
 - set_fact: mysql_server_id={{ command.stdout }}
   when: command.stdout is defined
 
+# Actions
+# =======
+- name: ensure /etc/mysql/conf.d existance
+  file:
+    path: /etc/mysql/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
 
-- name: get MySQL root password or generate one if none specified
-  become: true
-  become_user: root
-  shell:
-    # XXX: lookup password or vault would be safer
-    (LC_ALL=C sed -rn 's/^[[:blank:]]*password[[:blank:]]*=[[:blank:]]*([\x27"]?)(.*?)(\1)[[:blank:]]*$/\2/p' /root/.my.cnf) ||
-    (</dev/urandom tr -cd '\40\41\43-\46\50-\137\141-\176' | head -c 32)
-  changed_when: False
-  register: command
-  when: not mysql_root_password|default()
-  always_run: yes
-- set_fact: mysql_root_password={{ command.stdout }}
-  when: command.stdout is defined
-
+- name: ensure /etc/mysql/conf.d inclusion
+  lineinfile:
+    dest: '{{ "/etc/mysql/my.cnf" if ansible_os_family == "Debian" else "/etc/my.cnf" }}'
+    line: "!includedir /etc/mysql/conf.d/"
 
 - name: configure database server
   template:
