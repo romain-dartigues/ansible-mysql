@@ -21,6 +21,7 @@
   changed_when: False
   register: command
   when: not mysql_server_id
+  always_run: yes
 - set_fact: mysql_server_id={{ command.stdout }}
   when: command.stdout is defined
 
@@ -35,6 +36,7 @@
   changed_when: False
   register: command
   when: not mysql_root_password|default()
+  always_run: yes
 - set_fact: mysql_root_password={{ command.stdout }}
   when: command.stdout is defined
 
@@ -101,6 +103,8 @@
   service:
     name: mysql
     state: reloaded
+  when:
+    not ansible_check_mode
 
 - name: create /root/.my.cnf with root credentials
   template:

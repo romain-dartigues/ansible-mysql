@@ -12,7 +12,7 @@
 
 - name: show unnecessary accounts
   debug: var=command.stdout_lines
-  when: command.stdout is defined and command.stdout|default()
+  when: command.stdout|default()
 
 - name: drop unnecessary accounts
   mysql_user:
@@ -20,11 +20,12 @@
    host: "{{ item.split('\t').1 }}"
    state: 'absent'
   with_items: command.stdout_lines
-  when: command.stdout is defined
+  when:
+    command.stdout|default()
 
 - name: remove test database on first install
   mysql_db:
     db: test
     state: absent
-  when: mysql_register_install_status.changed is defined
-
+  when:
+    mysql_register_install_status|changed

@@ -1,6 +1,12 @@
 ---
+# TODO: remove when https://github.com/ansible/ansible/pull/14028 will be merged
+- command: /bin/true
+  register: command
+- set_fact: ansible_check_mode={{ command|skipped }}
+
+# TODO: support MariaDB
 # TODO: make it RedHat compatible
-- include: install_MySQL_on_Debian.yml
+- include: 'install_MySQL_on_Debian.yml'
   tags:
     - mysql_installation
 
@@ -14,8 +20,7 @@
   tags:
     - mysql_secure_installation
   when:
-        mysql_register_install_status.changed is defined
-    and mysql_register_install_status.changed
+    mysql_register_install_status|changed
 
 - name: create a fact directory on the target machine
   file:
@@ -37,5 +42,5 @@
 - name: reload facts if they have changed
   action: setup
   when:
-    mysql_register_facts_locally.changed is defined
+    mysql_register_facts_locally|changed
 
