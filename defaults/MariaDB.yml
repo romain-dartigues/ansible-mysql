@@ -1,9 +1,0 @@
----
-# XXX: currently unused
-# from https://github.com/debops/ansible-mariadb_server/blob/master/defaults/main.yml
-mariadb_server_upstream_version: '10.1'
-
-# debian!
-mariadb_server_upstream_mirror: 'http://nyc2.mirrors.digitalocean.com/mariadb/repo/{{ mariadb_server_upstream_version }}/{{ ansible_distribution | lower }}'
-mariadb_server_upstream_repository: 'deb {{ mariadb_server_upstream_mirror }} {{ ansible_distribution_release }} main'
-
