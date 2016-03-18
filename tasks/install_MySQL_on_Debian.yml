@@ -6,6 +6,7 @@
         [ mysql_flavor.partition('-').0.lower() + '-server' ]
         + mysql_packages
         + ( [ 'automysqlbackup' ] if mysql_backup|default() else [] )
+        + ( [ 'percona-xtrabackup' ] if mysql_xtrabackup|default() else [] )
       }}
 
 - name: check if database server is installed
