@@ -1,0 +1,108 @@
+#!/bin/sh
+# {{ ansible_managed }}
+
+
+INCREMENTAL=
+BACKUP_DIR="{{ mysql_xtrabackup_options.BACKUP_DIR }}"
+OPTS="mysql_xtrabackup_options.HELPER_OPTS"
+PURGE=
+
+
+
+
+usage()
+{
+	echo "$(basename $0) - [OPTIONS]"
+	echo
+	echo '  -h       this help'
+	echo "  -d PATH  directory to store backups (default: $BACKUP_DIR)"
+	echo '           silently return if empty'
+	echo '  -i       make an incremental backup'
+	echo "  -o OPTS  options passed to innobackupex (default: $OPTS)"
+	echo "  -r REF   remove backups older than this date reference (ie: '1 day')"
+	echo '           see: man 1 date'
+	echo
+}
+
+
+
+
+
+GETOPT=$(getopt -o hid:o: -n "$0" -- "$@") || exit 1
+eval set -- $GETOPT
+while true;do
+	case "$1" in
+	--)
+		shift
+		break
+		;;
+	-h)
+		usage
+		exit
+		;;
+	-i)
+		INCREMENTAL=1
+		shift
+		;;
+	-d)
+		BACKUP_DIR="$2"
+		shift 2
+		;;
+	-o)
+		OPTS="$2"
+		shift 2
+		;;
+	-r)
+		PURGE=$(date --date="-$2" +%s)
+		echo "Info: going to remove backups done before: $(date --date='-$2' +%FT%T)"
+		shift 2
+		;;
+	esac
+done
+
+
+
+# prevent a rm -fr /
+if [ "$BACKUP_DIR" -ef / ]
+then
+	echo "Error: backup directory is likely unset: $BACKUP_DIR" >&2
+	exit 1
+fi
+
+
+
+if [ -n "$PURGE" ]
+then
+	ls -v "$BACKUP_DIR" |
+	while read -r DIR
+	do
+		# convert innobackupex timestamp to epoch
+		# and skip if unparsable
+		TIMESTAMP=$(
+			date --date=$(echo $DIR|sed -r 's/(....-..-..)_(..)-(..)-(..)/\1T\2:\3:\4/') +%s
+		) || continue
+
+		# we need to purge incremental backups following a deleted full backup;
+		# this test will stop the killing on the first full backup more recent than the death penalty
+		[ $TIMESTAMP -gt $PURGE ] &&
+		grep -q '^backup_type = full-prepared$' "$DIR/xtrabackup_checkpoints" &&
+		break
+
+		# otherwise... *boom*
+		rm -fr "$DIR"
+	done
+fi
+
+
+if [ -z "$INCREMENTAL" ]
+then
+	innobackupex "$BACKUP_DIR" $OPTS 2>&1
+else
+	INCREMENTAL_BASEDIR=$(ls -v "$BACKUP_DIR" | tail -1)
+	if [ -z "$INCREMENTAL_BASEDIR" ]
+	then
+		echo "Error: unable to find a previous backup to increment" >&2
+		exit 1
+	fi
+	innobackupex "$BACKUP_DIR" $OPTS --incremental --incremental-basedir="$INCREMENTAL_BASEDIR" 2>&1
+fi
