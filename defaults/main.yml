@@ -158,6 +158,14 @@ mysql_slave_options:
     read_only: 1
     replicate-wild-do-table: '{{ mysql_replicate_databases }}'
 
+# Backups
+# =======
+#
+# .. envvar:: mysql_backup_directory
+#
+# Base path for backup files.
+
+mysql_backup_directory: /var/cache/mysql
 
 # Auto MySQL Backup
 # -----------------
@@ -173,7 +181,7 @@ mysql_automysqlbackup: False
 #
 # Options to be set in the configuration.
 mysql_backup_options:
-  BACKUPDIR: /var/lib/automysqlbackup
+  BACKUPDIR: "{{ mysql_backup_directory }}/automysqlbackup"
   DBHOST: localhost
   MAILCONTENT: quiet
   MAXATTSIZE: 4000
@@ -189,6 +197,10 @@ mysql_backup_options:
   LATEST: no
   ROUTINES: yes
 
+# Percona XtraBackup
+# ------------------
 mysql_xtrabackup: False
 
 mysql_xtrabackup_options:
+  BACKUP_DIR: "{{ mysql_backup_directory }}/xtrabackup"
+  HELPER_OPTS: '--compress --compress-chunk-size=1M'
