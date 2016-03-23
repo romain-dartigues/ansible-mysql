@@ -8,7 +8,8 @@ README
 Requirements
 ############
 
-In your :file:`ansible.cfg`:
+* a GNU userland
+* in your :file:`ansible.cfg`:
 
 .. code-block:: ini
 
