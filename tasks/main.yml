@@ -1,0 +1,45 @@
+---
+# TODO: remove when https://github.com/ansible/ansible/pull/14028 will be merged
+- command: /bin/true
+  register: command
+  changed_when: False
+- set_fact: ansible_check_mode={{ command|skipped }}
+
+# TODO: support MariaDB
+# TODO: make it RedHat compatible
+- include: 'install_MySQL_on_Debian.yml'
+  tags:
+    - mysql_installation
+
+- name: database configuration
+  include: 'configure.yml'
+  tags:
+    - mysql_configuration
+
+- name: secure installation
+  include: 'secure_installation.yml'
+  tags:
+    - mysql_secure_installation
+
+- name: create a fact directory on the target machine
+  file:
+    dest: '/etc/ansible/facts.d'
+    state: 'directory'
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+
+- name: save facts on the machine
+  template:
+    src: 'etc/ansible/facts.d/mysql.fact.j2'
+    dest: '/etc/ansible/facts.d/mysql.fact'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  register: mysql_register_facts_locally
+
+- name: reload facts if they have changed
+  action: setup
+  when:
+    mysql_register_facts_locally|changed
+

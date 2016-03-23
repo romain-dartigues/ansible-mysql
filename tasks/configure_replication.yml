@@ -1,0 +1,74 @@
+---
+# Replication
+# ###########
+- name: set replication master from Ansible name if required
+  set_fact: mysql_register_replication_master={{ hostvars[mysql_replication_master].ansible_host if hostvars[mysql_replication_master] is defined else mysql_replication_master|default() }}
+
+- set_fact:
+    mysql_replication_user_pass: '{{ lookup("password", "credentials/mysql/" + mysql_replication_master + "/" + mysql_replication_user_name) }}'
+  when:
+        mysql_replication_role|default()
+    and mysql_replication_master|default()
+    and mysql_replication_user_name|default()
+    and not mysql_replication_user_pass|default()
+
+- name: test requirements for replication configuration
+  assert:
+    that:
+      - mysql_replication_role|default()
+      - mysql_replication_master|default()
+      - mysql_register_replication_master
+      - mysql_replication_user_name|default()
+      - mysql_replication_user_pass|default()
+
+- name: ensure replication user exists on master
+  mysql_user:
+    name: "{{ mysql_replication_user_name }}"
+    host: "{{ mysql_replication_user_host }}"
+    password: "{{ mysql_replication_user_pass }}"
+    priv: "{{ mysql_replication_user_priv }}"
+  when:
+        mysql_replication_role == "master"
+    and mysql_replication_user_name|default()
+    and mysql_replication_user_pass|default()
+
+
+- name: check slave replication status
+  mysql_replication: mode=getslave
+  ignore_errors: true
+  register: mysql_register_slave
+  when:
+        mysql_replication_role == "slave"
+    and mysql_register_replication_master
+
+- name: check master replication status
+  mysql_replication: mode=getmaster
+  delegate_to: "{{ mysql_register_replication_master }}"
+  register: master
+  when:
+        mysql_replication_role == "slave"
+    and mysql_register_replication_master
+    and mysql_register_slave|failed
+
+- name: configure replication on the slave
+  mysql_replication:
+    mode: changemaster
+    master_host: "{{ mysql_register_replication_master }}"
+    master_user: "{{ mysql_replication_user_name }}"
+    master_password: "{{ mysql_replication_user_pass }}"
+    master_log_file: "{{ master.File }}"
+    master_log_pos: "{{ master.Position }}"
+  ignore_errors: True
+  when:
+        mysql_replication_role == "slave"
+    and mysql_register_replication_master
+    and mysql_register_slave|failed
+    and mysql_replication_user_name|default()
+    and mysql_replication_user_pass
+
+- name: start replication
+  mysql_replication: mode=startslave
+  when:
+        mysql_replication_role == "slave"
+    and mysql_register_replication_master
+    and mysql_register_slave|failed

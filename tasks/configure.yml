@@ -1,0 +1,118 @@
+---
+# Database configuration
+# ######################
+#
+# Compute missing values
+# ======================
+- name: get or set MySQL root password when unset
+  set_fact:
+    mysql_root_password: '{{ lookup("password", "credentials/mysql/" + ansible_fqdn + "/root") }}'
+  when:
+    not mysql_root_password|default()
+
+- name: get or generate server-id
+  shell:
+    ip -o -4 a s up |
+    awk '$2 != "lo" {sub(/\/.*/, "", $4);split($4, a, "."); print a[1]*256^3 + a[2]*256^2 + a[3]*256 + a[4]; exit}'
+  changed_when: False
+  register: command
+  when: not mysql_server_id
+  always_run: yes
+- set_fact: mysql_server_id={{ command.stdout }}
+  when: command.stdout is defined
+
+# Actions
+# =======
+- name: ensure /etc/mysql/conf.d existance
+  file:
+    path: /etc/mysql/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: ensure /etc/mysql/conf.d inclusion
+  lineinfile:
+    dest: '{{ "/etc/mysql/my.cnf" if ansible_os_family == "Debian" else "/etc/my.cnf" }}'
+    line: "!includedir /etc/mysql/conf.d/"
+
+- name: configure database server
+  template:
+    src: 'etc/mysql/conf.d/global.cnf.j2'
+    dest: '/etc/mysql/conf.d/global.cnf'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  register:
+    mysql_register_configuration_changed
+
+
+- name: create directories
+  file:
+    dest: '{{ item }}'
+    state: 'directory'
+    recurse: true
+    owner: 'mysql'
+    group: 'mysql'
+    mode: '0755'
+  with_items:
+    - "{{ mysql_options.mysqld.datadir }}"
+    - "{{ mysql_options.mysqld['log-bin'] | dirname }}"
+    - "{{ mysql_options.mysqld.tmpdir }}"
+    - "{{ mysql_options.mysqld.socket | dirname }}"
+    - "{{ mysql_options.mysqld_safe['log-error'] | dirname }}"
+    - "{{ mysql_options.mysqld_safe.slow_query_log_file | dirname }}"
+
+
+- name: create slow query log file
+  file:
+    state=touch
+    path={{ mysql_slow_query_log_file }}
+    owner=mysql
+    group=mysql
+    mode=0644
+  when: mysql_slow_query_log_file|default()
+
+
+- name: database replication configuration
+  include: 'configure_replication.yml'
+  tags:
+    - mysql_replication
+  when: mysql_replication_role|default()
+
+
+- name: auto MySQL backup configuration
+  include: 'configure_automysqlbackup.yml'
+  tags:
+    - mysql_backup
+    - mysql_automysqlbackup
+  when: mysql_automysqlbackup
+
+- name: Percona XtraBackup configuration
+  include: 'configure_xtrabackup.yml'
+  tags:
+    - mysql_backup
+    - mysql_xtrabackup
+  when: mysql_xtrabackup|default()
+
+
+- name: update database admin password
+  mysql_user:
+    name: 'root'
+    host: 'localhost'
+    password: '{{ mysql_root_password }}'
+
+- name: reload MySQL
+  service:
+    name: mysql
+    state: reloaded
+  when:
+    not ansible_check_mode
+
+- name: create /root/.my.cnf with root credentials
+  template:
+    src: 'root/my.cnf.j2'
+    dest: '/root/.my.cnf'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'

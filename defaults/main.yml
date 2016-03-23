@@ -1,0 +1,206 @@
+---
+# Default variables
+# =================
+
+# .. envvar:: mariadb_server_delegate_to
+#
+# Hostname of the server to which Ansible roles will delegate tasks.
+# It should point to "this server", using a FQDN hostname known to Ansible.
+mysql_delegate_to: '{{ ansible_fqdn }}'
+
+# .. contents:: Sections
+#    :local:
+#
+# .. envvar:: mysql_flavor
+#
+# Defines which database engine to use (case sensitive):
+#
+#  - ``MySQL``: (default) use MySQL
+#  - ``MariaDB``: use MariaDB from repository
+#  - ``MariaDB-upstream``: use MariaDB from upstream repository
+mysql_flavor: "MySQL"
+
+mysql_packages:
+  - python-mysqldb
+
+# .. envvar:: mysql_server_id
+#
+# Automatically generated (eth0 first IPv4 as long) when unset.
+mysql_server_id:
+
+# .. envvar:: mysql_root_password
+#
+# Administrator password, if unset one will be generated.
+mysql_root_password:
+
+# .. envvar:: mysql_slow_query_log_file
+#
+# Enable slow queries logging.
+mysql_slow_query_log_file:
+
+# .. envvar:: mysql_options
+#
+# Options to set to the configuration file.
+#
+# .. Warning::
+#    Some options are defined outside this map (ie.: ``mysql_server_id``, ...).
+#
+# .. Note::
+#    If you setup a master-slave database, do not forget to setup
+#    ``mysql_options.mysqld.bind-address`` if you want it to work.
+#
+# It is recommended to have separate filesystems (or at least directory quotas),
+# for ``datadir``, ``log-bin``, ``tmpdir`` and the ``log-error`` parent directory.
+#
+# Taking in consideration FHS_ 3.0, we suggest:
+#
+# .. _FHS: http://refspecs.linuxfoundation.org/
+#
+# /var/lib/mysql:
+#    for databases
+#
+# /var/cache/mysql:
+#    for backups and dumps
+#
+# /var/log/mysql:
+#    for log files
+#
+# /var/spool/mysql:
+#    for binlogs
+#
+mysql_options:
+  mysqld:
+    server_id: '{{ mysql_server_id }}'
+    # Change to ``0.0.0.0`` for IPv4 listening and ``::`` for IPv4 and IPv6.
+    bind-address: localhost
+    port: 3306
+    max-connections: 100
+    character-set-server: utf8
+    collation-server: utf8_general_ci
+    init-connect: 'SET NAMES utf8;'
+    datadir: /var/lib/mysql
+    log-bin: /var/spool/mysql/mysql-bin
+    tmpdir: /var/tmp/mysql
+    socket: /var/run/mysqld/mysqld.sock
+    old_passwords: 0
+    innodb_file_per_table: 1
+
+  mysqld_safe:
+    log-error: /var/log/mysql/error.log
+    slow_query_log_file: /var/log/mysql/slow.log
+    long_query_time: 2
+    slow-query-log: 1
+
+  client:
+    default-character-set: utf8
+
+# Replication
+# ===========
+#
+# .. Note::
+#    All ``mysql_replication_*`` are required in order to setup replication.
+#
+# .. Note::
+#    The options: ``binlog-*-db`` and ``replicate-*-db`` are considered harmful;
+#    it is suggested to use the ``replicate-wild-*`` options instead.
+#    https://www.percona.com/blog/2009/05/14/why-mysqls-binlog-do-db-option-is-dangerous/
+#
+# .. envvar:: mysql_replication_role
+#
+# Could be one of: ``slave``, ``master`` or unset to disable.
+mysql_replication_role:
+
+# .. envvar:: mysql_replication_master
+#
+# Master location (hostname or IP address or ansible name).
+mysql_replication_master:
+
+# .. envvar:: mysql_replication_user_name
+#
+# Username used for the replication.
+mysql_replication_user_name: "replicator"
+
+# .. envvar:: mysql_replication_user_host
+#
+# Host of the replication user (client) used to create the access on the master.
+mysql_replication_user_host: "%"
+
+# .. envvar:: mysql_replication_user_pass
+mysql_replication_user_pass:
+
+# .. envvar:: mysql_replication_user_priv
+#
+# Used to be::
+#
+#   *.*:SELECT, PROCESS, FILE, SUPER, REPLICATION CLIENT, REPLICATION SLAVE, RELOAD
+mysql_replication_user_priv: "*.*:REPLICATION SLAVE"
+
+# .. envvar:: mysql_replicate_databases
+mysql_replicate_databases: []
+
+# .. envvar:: mysql_master_options
+#
+# Additional options, only on the master.
+mysql_master_options:
+  mysqld:
+    expire_logs_days: 3
+    max_binlog_size: 20M
+    innodb_flush_log_at_trx_commit: 1
+    sync_binlog: 1
+    binlog-do-db: '{{ mysql_replicate_databases }}'
+
+# .. envvar:: mysql_slave_options
+#
+# Additional options, only on the slave.
+mysql_slave_options:
+  mysqld:
+    skip-slave-start: 1
+    read_only: 1
+    replicate-wild-do-table: '{{ mysql_replicate_databases }}'
+
+# Backups
+# =======
+#
+# .. envvar:: mysql_backup_directory
+#
+# Base path for backup files.
+
+mysql_backup_directory: /var/cache/mysql
+
+# Auto MySQL Backup
+# -----------------
+#
+# http://automysqlbackup.sf.net/
+#
+# .. envvar:: mysql_automysqlbackup
+#
+# Enable `Auto MySQL Backup <http://automysqlbackup.sf.net/>`_.
+mysql_automysqlbackup: False
+
+# .. envvar:: mysql_backup_options
+#
+# Options to be set in the configuration.
+mysql_backup_options:
+  BACKUPDIR: "{{ mysql_backup_directory }}/automysqlbackup"
+  DBHOST: localhost
+  MAILCONTENT: quiet
+  MAXATTSIZE: 4000
+  MAILADDR: root
+  DBNAMES: all
+  MDBNAMES: "mysql $DBNAMES"
+  DBEXCLUDE: "mysql information_schema performance_schema"
+  CREATE_DATABASE: yes
+  SEPDIR: yes
+  DOWEEKLY: 6
+  COMP: gzip
+  COMMCOMP: no
+  LATEST: no
+  ROUTINES: yes
+
+# Percona XtraBackup
+# ------------------
+mysql_xtrabackup: False
+
+mysql_xtrabackup_options:
+  BACKUP_DIR: "{{ mysql_backup_directory }}/xtrabackup"
+  HELPER_OPTS: '--compress --compress-chunk-size=1M'

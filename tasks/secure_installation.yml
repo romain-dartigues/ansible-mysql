@@ -1,0 +1,31 @@
+---
+- name: restart database server on first install
+  service:
+    name: 'mysql'
+    state: 'restarted'
+  when:
+        mysql_register_install_status is defined
+    and mysql_register_install_status|changed
+
+- name: find unnecessary accounts
+  command:
+    mysql -NBe 'SELECT User, Host FROM mysql.user WHERE (User="root" AND Host!="localhost") OR User="";'
+  changed_when: False
+  register: command
+
+- name: drop unnecessary accounts
+  mysql_user:
+   name: "{{ item.split('\t').0 }}"
+   host: "{{ item.split('\t').1 }}"
+   state: 'absent'
+  with_items: command.stdout_lines
+  when:
+    command.stdout|default()
+
+- name: remove test database on first install
+  mysql_db:
+    db: test
+    state: absent
+  when:
+        mysql_register_install_status is defined
+    and mysql_register_install_status|changed

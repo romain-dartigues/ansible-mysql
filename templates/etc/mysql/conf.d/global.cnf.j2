@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+{# ../../../../defaults/main.yml -#}
+# vim:set ft=dosini:
+
+{% for section, values in mysql_options|dictsort -%}
+[{{ section }}]
+{% for key, val in values|dictsort -%}
+{{ "%-23s = %s" | format(key, val|default('on')) }}
+{% endfor %}
+{% endfor %}

@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+
+# daily full backup, purging old >= 1 day
+5 1 * * * root xtrabackup_helper -r '1 day' ; xtrabackup_helper >/dev/null
+
+# hourly incremental backup
+23 2-23 * * * root xtrabackup_helper -i >/dev/null
