@@ -84,12 +84,14 @@
 - name: auto MySQL backup configuration
   include: 'configure_automysqlbackup.yml'
   tags:
+    - mysql_backup
     - mysql_automysqlbackup
   when: mysql_automysqlbackup
 
 - name: Percona XtraBackup configuration
   include: 'configure_xtrabackup.yml'
   tags:
+    - mysql_backup
     - mysql_xtrabackup
   when: mysql_xtrabackup|default()
 
