@@ -4,7 +4,7 @@
 
 INCREMENTAL=
 BACKUP_DIR="{{ mysql_xtrabackup_options.BACKUP_DIR }}"
-OPTS="mysql_xtrabackup_options.HELPER_OPTS"
+OPTS="{{ mysql_xtrabackup_options.HELPER_OPTS }}"
 PURGE=
 
 
@@ -16,7 +16,6 @@ usage()
 	echo
 	echo '  -h       this help'
 	echo "  -d PATH  directory to store backups (default: $BACKUP_DIR)"
-	echo '           silently return if empty'
 	echo '  -i       make an incremental backup'
 	echo "  -o OPTS  options passed to innobackupex (default: $OPTS)"
 	echo "  -r REF   remove backups older than this date reference (ie: '1 day')"
@@ -28,7 +27,7 @@ usage()
 
 
 
-GETOPT=$(getopt -o hid:o: -n "$0" -- "$@") || exit 1
+GETOPT=$(getopt -o hid:o:r: -n "$0" -- "$@") || exit 1
 eval set -- $GETOPT
 while true;do
 	case "$1" in
@@ -53,8 +52,8 @@ while true;do
 		shift 2
 		;;
 	-r)
-		PURGE=$(date --date="-$2" +%s)
-		echo "Info: going to remove backups done before: $(date --date='-$2' +%FT%T)"
+		PURGE=$(date --date="-${2:?date reference can not be null}" +%s) || exit 1
+		echo "Info: going to remove backups done before: $(date --date="-$2" +%FT%T)"
 		shift 2
 		;;
 	esac
@@ -63,7 +62,7 @@ done
 
 
 # prevent a rm -fr /
-if [ "$BACKUP_DIR" -ef / ]
+if [ -z "$BACKUP_DIR" -o "$BACKUP_DIR" -ef / ]
 then
 	echo "Error: backup directory is likely unset: $BACKUP_DIR" >&2
 	exit 1
@@ -82,15 +81,22 @@ then
 			date --date=$(echo $DIR|sed -r 's/(....-..-..)_(..)-(..)-(..)/\1T\2:\3:\4/') +%s
 		) || continue
 
+		# weird... skip to be safe
+		[ -f "$BACKUP_DIR/$DIR/xtrabackup_checkpoints" ] || continue
+
 		# we need to purge incremental backups following a deleted full backup;
 		# this test will stop the killing on the first full backup more recent than the death penalty
 		[ $TIMESTAMP -gt $PURGE ] &&
-		grep -q '^backup_type = full-prepared$' "$DIR/xtrabackup_checkpoints" &&
-		break
+		grep -q '^backup_type = full' "$BACKUP_DIR/$DIR/xtrabackup_checkpoints" && {
+			echo "Info: stopping at: $DIR"
+			break
+		}
 
 		# otherwise... *boom*
-		rm -fr "$DIR"
+		echo "Info: deleting: $DIR"
+		rm -fr "$BACKUP_DIR/$DIR"
 	done
+	exit
 fi
 
 
@@ -101,7 +107,7 @@ else
 	INCREMENTAL_BASEDIR=$(ls -v "$BACKUP_DIR" | tail -1)
 	if [ -z "$INCREMENTAL_BASEDIR" ]
 	then
-		echo "Error: unable to find a previous backup to increment" >&2
+		echo "Error: unable to find a previous backup to increment in: $BACKUP_DIR" >&2
 		exit 1
 	fi
 	innobackupex "$BACKUP_DIR" $OPTS --incremental --incremental-basedir="$INCREMENTAL_BASEDIR" 2>&1
