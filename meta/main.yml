@@ -1,0 +1,17 @@
+---
+# Included only tested versions, *might* work elsewhere.
+galaxy_info:
+  author: Romain Dartigues
+  description: MySQL/MariaDB Ansible role with sane defaults
+  issue_tracker_url: https://github.com/romain-dartigues/ansible-mysql/issues
+  license: BSD 3-Clause
+  min_ansible_version: 2.0.0.2
+  github_branch: master
+  platforms:
+    - name: Ubuntu
+      versions:
+        - trusty
+  galaxy_tags:
+    - sql
+    - database
+dependencies: []
