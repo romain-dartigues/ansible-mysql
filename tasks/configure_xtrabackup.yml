@@ -1,6 +1,6 @@
 ---
 # innobackupex --defaults-file=/etc/mysql/my.cnf --user=DBUSER --password=DBUSERPASS /path/to/BACKUP-DIR/ no-timestamp
-- name: create Percona XtraBackup directory
+- name: 'xtrabackup: create backup directory'
   file:
     path: "{{ mysql_xtrabackup_options.BACKUPDIR }}"
     state: directory

@@ -2,7 +2,7 @@
 # Default variables
 # =================
 
-# .. envvar:: mariadb_server_delegate_to
+# .. envvar:: mysql_delegate_to
 #
 # Hostname of the server to which Ansible roles will delegate tasks.
 # It should point to "this server", using a FQDN hostname known to Ansible.
@@ -15,8 +15,8 @@ mysql_delegate_to: '{{ ansible_fqdn }}'
 #
 # Defines which database engine to use (case sensitive):
 #
-#  - ``MySQL``: (default) use MySQL
-#  - ``MariaDB``: use MariaDB from repository
+#  - ``MySQL``: use MySQL (default)
+#  - ``MariaDB``: use MariaDB from distribution repository
 #  - ``MariaDB-upstream``: use MariaDB from upstream repository
 mysql_flavor: "MySQL"
 
