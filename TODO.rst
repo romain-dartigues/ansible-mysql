@@ -8,6 +8,11 @@ TODO
 Ansible
 =======
 
+Documentation
+-------------
+
+YAML documentation, ie: https://github.com/debops/docs/blob/master/docs/conf.py
+
 Passwords generation and Vault
 ------------------------------
 
