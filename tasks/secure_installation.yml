@@ -18,8 +18,9 @@
    name: "{{ item.split('\t').0 }}"
    host: "{{ item.split('\t').1 }}"
    state: 'absent'
-  with_items: command.stdout_lines
+  with_items: '{{ command.stdout_lines }}'
   when:
+    not ansible_check_mode and
     command.stdout|default()
 
 - name: remove test database on first install
