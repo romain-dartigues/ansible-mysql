@@ -14,6 +14,24 @@ Passwords generation and Vault
 * https://github.com/ansible/ansible/pull/14079
 * https://github.com/ansible/ansible/pull/8110
 
+Configure users
+---------------
+
+Find a workaround: ansible 2 deprecated using dictionary variables to set all
+task parameters, since then the following is not possible:
+
+group_vars/sql.yml::
+
+  mysql_users:
+  - {name: reader, password: "pwd123!", priv: '*.*:USAGE'}
+
+tasks/configure.yml::
+
+  - name: configure users
+    mysql_user: '{{ item }}'
+    with_items: '{{ mysql_users }}'
+    when: mysql_users
+
 MySQL
 =====
 
