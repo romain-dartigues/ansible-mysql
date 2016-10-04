@@ -8,13 +8,23 @@
     group: 'root'
     mode: '0755'
   when:
-        mysql_xtrabackup|default()
+        mysql_xtrabackup
     and mysql_xtrabackup_options.BACKUPDIR|default()
 
-- name: install a helper
+- name: 'xtrabackup: install a helper'
   template:
     src: 'usr/local/sbin/xtrabackup_helper.j2'
     dest: '/usr/local/sbin/xtrabackup_helper'
     owner: 'root'
     group: 'root'
-    mode: '0755'
+    mode: 0755
+  when: mysql_xtrabackup
+
+- name: 'xtrabackup: install a cron job'
+  template:
+    src: 'etc/cron.d/xtrabackup.j2'
+    dest: '/etc/cron.d/xtrabackup'
+    owner: root
+    group: root
+    mode: 0640
+  when: mysql_xtrabackup

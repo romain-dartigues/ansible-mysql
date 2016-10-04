@@ -42,7 +42,7 @@
     dest: '/etc/mysql/conf.d/global.cnf'
     owner: 'root'
     group: 'root'
-    mode: '0644'
+    mode: 0644
   register:
     mysql_register_configuration_changed
 
@@ -62,15 +62,17 @@
     - "{{ mysql_options.mysqld.socket | dirname }}"
     - "{{ mysql_options.mysqld_safe['log-error'] | dirname }}"
     - "{{ mysql_options.mysqld_safe.slow_query_log_file | dirname }}"
+    - "{{ mysql_backup_options.BACKUPDIR }}"
+    - "{{ mysql_xtrabackup_options.BACKUP_DIR }}"
 
 
 - name: create slow query log file
   file:
-    state=touch
-    path={{ mysql_slow_query_log_file }}
-    owner=mysql
-    group=mysql
-    mode=0644
+    state: touch
+    path: '{{ mysql_slow_query_log_file }}'
+    owner: mysql
+    group: mysql
+    mode: 0644
   when: mysql_slow_query_log_file|default()
 
 
@@ -93,7 +95,7 @@
   tags:
     - mysql_backup
     - mysql_xtrabackup
-  when: mysql_xtrabackup|default()
+  when: mysql_xtrabackup
 
 
 - name: update database admin password
